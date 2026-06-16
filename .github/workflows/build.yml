@@ -1,0 +1,48 @@
+# Compile Elvanto Kiosk (WPF + WebView2) en exe Windows x64 autonome.
+# Déclenché à chaque push sur main, ou manuellement depuis l'onglet Actions.
+
+name: Build Elvanto Kiosk
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publier l'exécutable (win-x64, self-contained)
+        run: |
+          dotnet publish src/ElvantoKiosk/ElvantoKiosk.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -o publish
+
+      - name: Copier les scripts d'installation
+        run: |
+          New-Item -ItemType Directory -Path publish/installer -Force | Out-Null
+          Copy-Item installer/install.ps1 publish/installer/
+          Copy-Item installer/uninstall.ps1 publish/installer/
+
+      - name: Téléverser l'artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ElvantoKiosk-win-x64
+          path: publish/
+          retention-days: 30
