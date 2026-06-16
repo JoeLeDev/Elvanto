@@ -1,0 +1,16 @@
+# Build .NET
+bin/
+obj/
+publish/
+*.user
+
+# WebView2 / runtime
+WebView2Data/
+src/ElvantoKiosk/logs/
+
+# IDE
+.vs/
+.idea/
+
+# macOS
+.DS_Store

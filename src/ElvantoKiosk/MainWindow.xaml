@@ -1,0 +1,81 @@
+<Window x:Class="ElvantoKiosk.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:controls="clr-namespace:ElvantoKiosk.Controls"
+        Title="Elvanto Kiosk"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        WindowState="Maximized"
+        Topmost="True"
+        Background="{StaticResource BackgroundBrush}"
+        UseLayoutRounding="True">
+
+    <Grid>
+        <!-- Page d'accueil -->
+        <controls:HomeView x:Name="Home" />
+
+        <!-- Navigateur embarqué pour les formulaires Elvanto -->
+        <wv2:WebView2 x:Name="Web" Visibility="Collapsed" />
+
+        <!-- Barre supérieure (visible uniquement pendant l'affichage d'un formulaire) -->
+        <Grid x:Name="TopBar" VerticalAlignment="Top" Height="64"
+              Background="#CC0F172A" Visibility="Collapsed">
+            <Button x:Name="HomeButton" Content="&#8592;  Accueil"
+                    Style="{StaticResource PrimaryButton}"
+                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                    Margin="20,0,0,0" Click="HomeButton_Click" />
+            <TextBlock x:Name="FormTitleText"
+                       Foreground="{StaticResource TextBrush}"
+                       FontSize="18" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+
+        <!-- Overlay d'erreur réseau / chargement -->
+        <Grid x:Name="ErrorOverlay" Background="{StaticResource BackgroundBrush}" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="700">
+                <TextBlock Text="&#9888;" FontSize="72" HorizontalAlignment="Center"
+                           Foreground="#FBBF24" Margin="0,0,0,20" />
+                <TextBlock Text="Connexion indisponible"
+                           Foreground="{StaticResource TextBrush}"
+                           FontSize="34" FontWeight="Bold"
+                           HorizontalAlignment="Center" />
+                <TextBlock x:Name="ErrorDetailText"
+                           Text="Le formulaire n'a pas pu être chargé. Vérifiez la connexion Internet. Une nouvelle tentative sera effectuée automatiquement."
+                           Foreground="{StaticResource MutedTextBrush}"
+                           FontSize="20" TextAlignment="Center" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" Margin="0,16,0,32" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Réessayer" Style="{StaticResource PrimaryButton}"
+                            Click="Retry_Click" Margin="0,0,12,0" />
+                    <Button Content="Retour à l'accueil" Style="{StaticResource PrimaryButton}"
+                            Background="#334155" Click="HomeButton_Click" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- Indicateur de chargement -->
+        <Border x:Name="LoadingOverlay" Background="#990F172A" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="Chargement…" Foreground="{StaticResource TextBrush}"
+                           FontSize="26" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- Bouton admin : quitter l'application (code PIN requis) -->
+        <Button x:Name="AdminExitButton"
+                Style="{StaticResource AdminExitButton}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,24,24"
+                Panel.ZIndex="100"
+                Click="AdminExitButton_Click"
+                ToolTip="Administration">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="&#128274;" FontSize="22" HorizontalAlignment="Center" />
+                <TextBlock Text="Fermer" FontSize="11" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" Margin="0,4,0,0" />
+            </StackPanel>
+        </Button>
+    </Grid>
+</Window>

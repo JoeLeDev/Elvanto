@@ -1,0 +1,41 @@
+{
+  "OrganizationName": "ICC",
+  "WelcomeTitle": "Bienvenue",
+  "WelcomeMessage": "Merci de compléter l'un des formulaires ci-dessous.",
+  "LogoPath": "assets/LOGO-ICC.png",
+  "AdminPin": "1234",
+  "InactivityTimeoutSeconds": 60,
+  "ReturnDelayAfterSubmitSeconds": 5,
+  "ShowHomeButton": true,
+  "ClearDataOnReturnHome": true,
+  "AllowedHosts": [
+    "elvanto.eu",
+    "elvanto.com",
+    "elvanto.com.au"
+  ],
+  "SubmitUrlKeywords": [
+    "thank",
+    "merci",
+    "success",
+    "complete",
+    "submitted",
+    "confirmation"
+  ],
+  "Forms": [
+    {
+      "Title": "Première visite",
+      "Description": "Inscrivez-vous si c'est votre première venue.",
+      "Url": "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/PREMIER-FORMULAIRE"
+    },
+    {
+      "Title": "Enregistrement enfants",
+      "Description": "Enregistrez vos enfants pour l'accueil.",
+      "Url": "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/FORMULAIRE-ENFANTS"
+    },
+    {
+      "Title": "Demande de prière",
+      "Description": "Partagez un sujet de prière.",
+      "Url": "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/FORMULAIRE-PRIERE"
+    }
+  ]
+}

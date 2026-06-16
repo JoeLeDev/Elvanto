@@ -1,0 +1,74 @@
+<UserControl x:Class="ElvantoKiosk.Controls.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- En-tête : logo + nom de l'organisation -->
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,48,0,0">
+            <Image x:Name="LogoImage" MaxHeight="150" Stretch="Uniform"
+                   HorizontalAlignment="Center" Visibility="Collapsed" />
+            <TextBlock x:Name="OrgNameText"
+                       Foreground="{StaticResource MutedTextBrush}"
+                       FontSize="20" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" Margin="0,12,0,0" />
+        </StackPanel>
+
+        <!-- Corps : message de bienvenue + cartes de formulaires -->
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="40,0">
+            <TextBlock x:Name="WelcomeTitleText"
+                       Foreground="{StaticResource TextBrush}"
+                       FontSize="52" FontWeight="Bold"
+                       HorizontalAlignment="Center" TextAlignment="Center" />
+            <TextBlock x:Name="WelcomeMessageText"
+                       Foreground="{StaticResource MutedTextBrush}"
+                       FontSize="24" HorizontalAlignment="Center"
+                       TextAlignment="Center" Margin="0,16,0,40"
+                       TextWrapping="Wrap" MaxWidth="900" />
+
+            <ItemsControl x:Name="FormsList" HorizontalAlignment="Center" MaxWidth="1200">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Center" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource FormCardButton}"
+                                Click="FormButton_Click"
+                                Tag="{Binding}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}"
+                                           FontSize="26" FontWeight="Bold"
+                                           Foreground="{StaticResource TextBrush}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Description}"
+                                           FontSize="16"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           TextWrapping="Wrap" Margin="0,12,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock x:Name="NoFormsText"
+                       Text="Aucun formulaire configuré. Modifiez config.json."
+                       Foreground="{StaticResource MutedTextBrush}"
+                       FontSize="20" HorizontalAlignment="Center"
+                       Visibility="Collapsed" Margin="0,20,0,0" />
+        </StackPanel>
+
+        <!-- Pied de page -->
+        <TextBlock Grid.Row="2" x:Name="FooterText"
+                   Foreground="{StaticResource MutedTextBrush}"
+                   FontSize="13" Opacity="0.6"
+                   HorizontalAlignment="Center" Margin="0,0,0,18" />
+    </Grid>
+</UserControl>
