@@ -216,6 +216,13 @@
       line-height: 1.5;
     }
 
+    .form-url {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #64748b;
+      word-break: break-all;
+    }
+
     /* ----- Overlay erreur (aperçu) ----- */
     .error-demo {
       position: fixed;
@@ -420,20 +427,30 @@
 
       <div class="forms-grid">
         <button class="form-card" type="button" data-title="Première visite"
-                data-desc="Inscrivez-vous si c'est votre première venue.">
+                data-desc="Inscrivez-vous si c'est votre première venue."
+                data-url="https://jolly-drill-522.notion.site/f20ee63673094bc5a335a5c8c7b218b4?pvs=105">
           <h3>Première visite</h3>
           <p>Inscrivez-vous si c'est votre première venue.</p>
         </button>
 
         <button class="form-card" type="button" data-title="Enregistrement enfants"
-                data-desc="Enregistrez vos enfants pour l'accueil.">
+                data-desc="Enregistrez vos enfants pour l'accueil."
+                data-url="https://jolly-drill-522.notion.site/3e722e0ed85282788a3a01f97eb85565?pvs=105">
           <h3>Enregistrement enfants</h3>
           <p>Enregistrez vos enfants pour l'accueil.</p>
         </button>
 
         <button class="form-card" type="button" data-title="Demande de prière"
-                data-desc="Partagez un sujet de prière.">
+                data-desc="Partagez un sujet de prière."
+                data-url="https://jolly-drill-522.notion.site/92422e0ed8528309936a81495aaa1cc7?pvs=105">
           <h3>Demande de prière</h3>
+          <p>Partagez un sujet de prière.</p>
+        </button>
+
+        <button class="form-card" type="button" data-title="Formulaire 4"
+                data-desc="Partagez un sujet de prière."
+                data-url="https://jolly-drill-522.notion.site/5f722e0ed8528384aa7701981b69d97e?pvs=105">
+          <h3>Formulaire 4</h3>
           <p>Partagez un sujet de prière.</p>
         </button>
       </div>
@@ -455,11 +472,12 @@
           <rect x="3" y="3" width="18" height="18" rx="2"/>
           <path d="M7 8h10M7 12h10M7 16h6"/>
         </svg>
-        <h2>Formulaire Elvanto</h2>
+        <h2>Formulaire Notion</h2>
         <p>
-          Sur la borne Windows, le formulaire Elvanto s'affiche ici en plein écran
+          Sur la borne Windows, le formulaire Notion s'affiche ici en plein écran
           via WebView2 (sans barre d'adresse ni menus).
         </p>
+        <p class="form-url" id="form-url-preview"></p>
       </div>
     </div>
   </div>
@@ -520,6 +538,7 @@
     const screenHome = document.getElementById('screen-home');
     const screenForm = document.getElementById('screen-form');
     const formTitle = document.getElementById('form-title');
+    const formUrlPreview = document.getElementById('form-url-preview');
     const errorOverlay = document.getElementById('error-overlay');
 
     function showHome() {
@@ -528,14 +547,15 @@
       errorOverlay.classList.remove('visible');
     }
 
-    function showForm(title) {
+    function showForm(title, url) {
       formTitle.textContent = title;
+      formUrlPreview.textContent = url || '';
       screenHome.classList.remove('active');
       screenForm.classList.add('active');
     }
 
     document.querySelectorAll('.form-card').forEach(card => {
-      card.addEventListener('click', () => showForm(card.dataset.title));
+      card.addEventListener('click', () => showForm(card.dataset.title, card.dataset.url));
     });
 
     document.getElementById('btn-home').addEventListener('click', showHome);

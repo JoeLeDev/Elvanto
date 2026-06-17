@@ -9,9 +9,9 @@
   "ShowHomeButton": true,
   "ClearDataOnReturnHome": true,
   "AllowedHosts": [
-    "elvanto.eu",
-    "elvanto.com",
-    "elvanto.com.au"
+    "notion.so",
+    "notion.site",
+    "notion.com"
   ],
   "SubmitUrlKeywords": [
     "thank",
@@ -25,17 +25,22 @@
     {
       "Title": "Première visite",
       "Description": "Inscrivez-vous si c'est votre première venue.",
-      "Url": "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/PREMIER-FORMULAIRE"
+      "Url": "https://jolly-drill-522.notion.site/f20ee63673094bc5a335a5c8c7b218b4?pvs=105"
     },
     {
       "Title": "Enregistrement enfants",
       "Description": "Enregistrez vos enfants pour l'accueil.",
-      "Url": "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/FORMULAIRE-ENFANTS"
+      "Url": "https://jolly-drill-522.notion.site/3e722e0ed85282788a3a01f97eb85565?pvs=105"
     },
     {
       "Title": "Demande de prière",
       "Description": "Partagez un sujet de prière.",
-      "Url": "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/FORMULAIRE-PRIERE"
+      "Url": "https://jolly-drill-522.notion.site/92422e0ed8528309936a81495aaa1cc7?pvs=105"
+    },
+    {
+      "Title": "Formulaire 4",
+      "Description": "Partagez un sujet de prière.",
+      "Url": "https://jolly-drill-522.notion.site/5f722e0ed8528384aa7701981b69d97e?pvs=105"
     }
   ]
 }
