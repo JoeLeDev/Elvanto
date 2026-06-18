@@ -1,145 +1,77 @@
-# Elvanto Kiosk
+# ICC Kiosk (ElvantoKiosk)
 
-Borne d'accueil Windows en **mode kiosque** pour formulaires **Elvanto**.
+Borne d'accueil Windows en **mode kiosque** pour formulaires **Notion**.
 
-Au démarrage du poste, l'application s'ouvre automatiquement en plein écran et
-affiche une **page d'accueil** (logo + message de bienvenue) proposant plusieurs
-**boutons vers différents formulaires Elvanto**. Le visiteur choisit un
-formulaire, le remplit dans un navigateur intégré, puis la borne revient
-automatiquement à l'accueil après soumission ou après une période d'inactivité.
+Au démarrage du poste, l'application s'ouvre automatiquement en plein écran et affiche une **page d'accueil** (logo ICC, message de bienvenue) avec des **cartes cliquables** vers différents formulaires Notion. Le visiteur choisit un formulaire, le remplit dans un navigateur intégré, puis la borne revient automatiquement à l'accueil après soumission ou inactivité.
 
 - **Technologies** : C# / .NET 8, WPF, Microsoft Edge WebView2
-- **Compatibilité** : Windows 10 et Windows 11 (x64)
-- **Exécutable autonome** : le runtime .NET est embarqué (rien à installer côté .NET)
+- **Compatibilité** : Windows 10 et Windows 11 (x64), écrans tactiles
+- **Exécutable autonome** : le runtime .NET est embarqué (aucune installation .NET requise sur la borne)
+- **Build automatisé** : GitHub Actions génère l'exe à chaque push sur `main`
 
 ---
 
 ## Sommaire
 
 1. [Fonctionnement](#fonctionnement)
-2. [Structure du projet](#structure-du-projet)
-3. [Configuration (`config.json`)](#configuration-configjson)
-4. [Compilation](#compilation)
-5. [Installation sur la borne](#installation-sur-la-borne)
-6. [Mode administrateur / sortie du kiosque](#mode-administrateur--sortie-du-kiosque)
-7. [Journalisation](#journalisation)
-8. [Sécurité & verrouillage complet de Windows](#sécurité--verrouillage-complet-de-windows)
-9. [Dépannage](#dépannage)
+2. [Déploiement rapide (GitHub Actions)](#déploiement-rapide-github-actions)
+3. [Installation sur la borne](#installation-sur-la-borne)
+4. [Configuration (`config.json`)](#configuration-configjson)
+5. [Mises à jour](#mises-à-jour)
+6. [Mode administrateur](#mode-administrateur)
+7. [Checklist avant livraison](#checklist-avant-livraison)
+8. [Compilation locale (optionnel)](#compilation-locale-optionnel)
+9. [Aperçu design sur Mac](#aperçu-design-sur-mac)
+10. [Structure du projet](#structure-du-projet)
+11. [Journalisation](#journalisation)
+12. [Sécurité](#sécurité)
+13. [Dépannage](#dépannage)
 
 ---
 
 ## Fonctionnement
 
-- **Plein écran** sans bordure, sans barre d'adresse ni menus, toujours au premier plan.
-- **Page d'accueil maison** : logo de l'organisation, titre et message de bienvenue,
-  et une carte cliquable par formulaire défini dans la configuration.
-- **Affichage du formulaire** dans un WebView2 embarqué.
+- **Plein écran** sans bordure, barre d'adresse ni menus, toujours au premier plan.
+- **Page d'accueil** : logo ICC, titre, message de bienvenue, cartes de formulaires (taille uniforme).
+- **Formulaires Notion** chargés en direct via WebView2 (mise à jour automatique des champs côté Notion).
 - **Retour automatique à l'accueil** :
-  - après **soumission** détectée (URL de remerciement) — délai configurable ;
+  - après **soumission** détectée (mots-clés d'URL configurables) ;
   - après **60 secondes d'inactivité** (configurable) ;
-  - via un bouton **« Accueil »** discret.
-- **Réinitialisation des données** : cookies / stockage de session effacés au retour
-  à l'accueil, pour la confidentialité entre visiteurs.
-- **Message d'erreur convivial** si Internet est indisponible, avec bouton *Réessayer*.
-- **Sécurité** : touches système neutralisées (touche Windows, Alt+Tab, Alt+F4,
-  Ctrl+Échap, F11, F5, Ctrl+L/W/N/T…), navigation limitée aux domaines autorisés,
-  blocage des nouvelles fenêtres/onglets, fermeture accidentelle empêchée.
+  - via le bouton **« Accueil »**.
+- **Confidentialité** : cookies et session effacés entre visiteurs.
+- **Erreur réseau** : message convivial avec bouton *Réessayer*.
+- **Sécurité kiosque** : raccourcis système bloqués, navigation limitée aux domaines autorisés, fermeture protégée par PIN.
 
 ---
 
-## Structure du projet
+## Déploiement rapide (GitHub Actions)
 
-```
-Elvanto/
-├─ ElvantoKiosk.sln
-├─ build.ps1                      # Compile l'exécutable autonome -> .\publish
-├─ installer/
-│  ├─ install.ps1                # Installe WebView2, copie, démarrage auto, raccourcis
-│  └─ uninstall.ps1              # Désinstalle proprement
-├─ src/ElvantoKiosk/
-│  ├─ ElvantoKiosk.csproj
-│  ├─ app.manifest               # DPI awareness, Windows 10/11
-│  ├─ App.xaml(.cs)              # Démarrage, instance unique, gestion d'erreurs
-│  ├─ MainWindow.xaml(.cs)       # Fenêtre kiosque + WebView2 + sécurité
-│  ├─ config.json                # Configuration (URLs, PIN, délais…) — MODIFIABLE
-│  ├─ assets/                    # logo.png (à fournir)
-│  ├─ Controls/
-│  │  ├─ HomeView.xaml(.cs)      # Page d'accueil (logo, message, boutons)
-│  │  └─ PinDialog.xaml(.cs)     # Saisie du code PIN administrateur
-│  ├─ Models/                    # AppConfig, FormEntry
-│  └─ Services/                  # ConfigService, Logger, IdleTimeService, KeyboardHook
-└─ README.md
-```
+Méthode recommandée : **pas besoin du SDK .NET sur la borne**.
 
----
+1. Pousser le code sur `main` (repo : [JoeLeDev/Elvanto](https://github.com/JoeLeDev/Elvanto)).
+2. Aller dans **Actions** → workflow **Build Elvanto Kiosk** → attendre le statut **Success**.
+3. Télécharger l'artifact **`ElvantoKiosk-win-x64`** (fichier zip, ~60 Mo).
+4. Copier le zip sur le PC kiosque, dézipper (ex. `C:\Temp\ElvantoKiosk`).
+5. Vérifier `config.json` (URLs Notion, PIN).
+6. Installer (voir section suivante).
 
-## Configuration (`config.json`)
-
-L'URL des formulaires (et tous les réglages) se modifient **sans recompiler**.
-Le fichier se trouve à côté de l'exécutable (après installation :
-`C:\Program Files\ElvantoKiosk\config.json`).
-
-```json
-{
-  "OrganizationName": "Mon Organisation",
-  "WelcomeTitle": "Bienvenue",
-  "WelcomeMessage": "Merci de compléter l'un des formulaires ci-dessous.",
-  "LogoPath": "assets/logo.png",
-  "AdminPin": "1234",
-  "InactivityTimeoutSeconds": 60,
-  "ReturnDelayAfterSubmitSeconds": 5,
-  "ShowHomeButton": true,
-  "ClearDataOnReturnHome": true,
-  "AllowedHosts": ["elvanto.eu", "elvanto.com", "elvanto.com.au"],
-  "SubmitUrlKeywords": ["thank", "merci", "success", "complete", "submitted", "confirmation"],
-  "Forms": [
-    {
-      "Title": "Première visite",
-      "Description": "Inscrivez-vous si c'est votre première venue.",
-      "Url": "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/IDENTIFIANT"
-    }
-  ]
-}
-```
-
-| Clé | Rôle |
-|---|---|
-| `OrganizationName` | Nom affiché (et utilisé si aucun logo). |
-| `WelcomeTitle` / `WelcomeMessage` | Textes d'accueil. |
-| `LogoPath` | Chemin du logo (relatif à l'exe ou absolu). |
-| `AdminPin` | Code PIN pour quitter le kiosque (**à changer !**). |
-| `InactivityTimeoutSeconds` | Inactivité avant retour à l'accueil (défaut 60). |
-| `ReturnDelayAfterSubmitSeconds` | Délai après soumission avant retour à l'accueil. |
-| `ShowHomeButton` | Affiche le bouton « Accueil » pendant un formulaire. |
-| `ClearDataOnReturnHome` | Efface cookies/session entre visiteurs. |
-| `AllowedHosts` | Domaines autorisés à la navigation (sécurité). |
-| `SubmitUrlKeywords` | Mots-clés d'URL signalant une soumission réussie. |
-| `Forms[]` | Liste des formulaires (titre, description, URL). |
-
-> **Remplacez les URLs `VOTRE-SOUS-DOMAINE` / `IDENTIFIANT`** par vos vrais
-> formulaires Elvanto. Ajoutez autant d'entrées que nécessaire dans `Forms`.
-
----
-
-## Compilation
-
-Sous **Windows**, avec le [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) :
-
-```powershell
-# Depuis la racine du projet
-powershell -ExecutionPolicy Bypass -File .\build.ps1
-```
-
-Résultat : un exécutable autonome dans `.\publish\ElvantoKiosk.exe`
-(le runtime .NET 8 est embarqué — aucune dépendance .NET à installer).
+Le workflow compile sur `windows-latest`, publie un exe self-contained win-x64 et inclut les scripts `installer/`.
 
 ---
 
 ## Installation sur la borne
 
-1. Copiez le dossier `publish\` **et** le dossier `installer\` sur la borne.
-2. Déposez votre logo dans `publish\assets\logo.png` (facultatif).
-3. Lancez l'installation (clic droit → *Exécuter avec PowerShell*, ou) :
+### Prérequis
+
+- Windows 10 ou 11 (x64)
+- Connexion Internet
+- Droits administrateur pour l'installation
+
+### Étapes
+
+1. Dézipper l'artifact `ElvantoKiosk-win-x64` sur la borne.
+2. Éditer `config.json` si nécessaire (PIN, titres des cartes).
+3. Ouvrir **PowerShell en administrateur** dans le dossier dézippé :
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\installer\install.ps1
@@ -149,12 +81,21 @@ Le script :
 - installe le **runtime WebView2** s'il est absent ;
 - copie l'application dans `C:\Program Files\ElvantoKiosk` ;
 - conserve un `config.json` déjà présent (sauf `-Force`) ;
-- configure le **démarrage automatique après connexion** (raccourci dans
-  `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup`) ;
-- crée un **raccourci d'administration** sur le bureau (ouvre le dossier
-  contenant `config.json` et les journaux).
+- configure le **démarrage automatique** (raccourci Startup) ;
+- crée un **raccourci d'administration** sur le bureau public.
 
-Variante avec tâche planifiée :
+### Fichiers après installation
+
+| Élément | Chemin |
+|---|---|
+| Application | `C:\Program Files\ElvantoKiosk\ElvantoKiosk.exe` |
+| Configuration | `C:\Program Files\ElvantoKiosk\config.json` |
+| Logo | `C:\Program Files\ElvantoKiosk\assets\LOGO-ICC.png` |
+| Journaux | `C:\Program Files\ElvantoKiosk\logs\application.log` |
+
+### Variantes
+
+Démarrage via tâche planifiée :
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\installer\install.ps1 -StartupMethod ScheduledTask
@@ -168,31 +109,157 @@ powershell -ExecutionPolicy Bypass -File .\installer\uninstall.ps1
 
 ---
 
-## Mode administrateur / sortie du kiosque
+## Configuration (`config.json`)
 
-L'utilisateur ne peut **pas** fermer l'application (Alt+F4, croix, etc. sont bloqués).
+Tous les réglages se modifient **sans recompiler**. Éditez le fichier puis relancez l'application.
 
-Pour quitter (administrateur), deux méthodes :
+```json
+{
+  "OrganizationName": "ICC",
+  "WelcomeTitle": "Bienvenue",
+  "WelcomeMessage": "Merci de compléter l'un des formulaires ci-dessous.",
+  "LogoPath": "assets/LOGO-ICC.png",
+  "AdminPin": "1234",
+  "InactivityTimeoutSeconds": 60,
+  "ReturnDelayAfterSubmitSeconds": 5,
+  "ShowHomeButton": true,
+  "ClearDataOnReturnHome": true,
+  "AllowedHosts": ["notion.so", "notion.site", "notion.com"],
+  "SubmitUrlKeywords": ["thank", "merci", "success", "complete", "submitted", "confirmation"],
+  "Forms": [
+    {
+      "Title": "Première visite",
+      "Description": "Inscrivez-vous si c'est votre première venue.",
+      "Url": "https://votre-espace.notion.site/form/xxxxxxxx"
+    }
+  ]
+}
+```
 
-1. **Bouton « Fermer »** (coin inférieur droit, icône cadenas) — adapté aux écrans tactiles.
-2. Raccourci clavier **Ctrl + Maj + Q** (si un clavier est branché).
+| Clé | Rôle |
+|---|---|
+| `OrganizationName` | Nom affiché (fallback si pas de logo). |
+| `WelcomeTitle` / `WelcomeMessage` | Textes d'accueil. |
+| `LogoPath` | Chemin du logo (relatif à l'exe). |
+| `AdminPin` | Code PIN pour quitter le kiosque (**à changer !**). |
+| `InactivityTimeoutSeconds` | Inactivité avant retour à l'accueil (défaut 60 s). |
+| `ReturnDelayAfterSubmitSeconds` | Délai après soumission avant retour à l'accueil. |
+| `ShowHomeButton` | Affiche le bouton « Accueil » pendant un formulaire. |
+| `ClearDataOnReturnHome` | Efface cookies/session entre visiteurs. |
+| `AllowedHosts` | Domaines autorisés (sécurité navigation). |
+| `SubmitUrlKeywords` | Mots-clés d'URL indiquant une soumission réussie. |
+| `Forms[]` | Cartes de l'accueil : titre, description, URL Notion. |
 
-Dans les deux cas, un **clavier numérique à l'écran** demande le code PIN défini
-dans `config.json` (`AdminPin`).
+### Préparer un formulaire Notion
 
-> Changez impérativement le PIN par défaut (`1234`) avant le déploiement.
+1. Créer le formulaire dans Notion.
+2. **Partager le formulaire** → **Toute personne sur le web disposant du lien**.
+3. Copier l'URL (`notion.site` ou `notion.so`).
+4. Coller dans `Forms[].Url`.
 
-### Matériel testé
+Les modifications de champs dans Notion (libellés, champs ajoutés/supprimés) se reflètent **automatiquement** dans la borne, sans rebuild.
 
-Compatible avec les mini-PC tactiles Windows 11 (ex. MSI Cubi 5, écran 10 points).
-Les boutons et le clavier PIN sont dimensionnés pour une utilisation au doigt.
+> `C:\Program Files\...` peut exiger des droits admin pour enregistrer. Quittez l'app (PIN), éditez en admin, puis relancez.
+
+---
+
+## Mises à jour
+
+### Contenu Notion (champs, libellés)
+
+Automatique — rien à faire côté borne.
+
+### Cartes d'accueil, PIN, logo, délais
+
+Éditer `config.json` sur la borne → relancer l'app. Pas de rebuild.
+
+### Nouvelle version de l'application
+
+1. Push sur `main` → télécharger le nouvel artifact GitHub Actions.
+2. Quitter l'app (PIN).
+3. Relancer `installer\install.ps1` (conserve la config existante).
+
+---
+
+## Mode administrateur
+
+L'utilisateur ne peut pas fermer l'application (Alt+F4, croix, etc. bloqués).
+
+Pour quitter :
+
+1. **Bouton « Fermer »** (coin inférieur droit, icône cadenas) — adapté au tactile.
+2. Raccourci **Ctrl + Maj + Q** (si clavier branché).
+
+Un clavier numérique à l'écran demande le PIN (`AdminPin` dans `config.json`).
+
+> Changer le PIN par défaut (`1234`) avant la mise en production.
+
+**Matériel** : compatible mini-PC tactiles Windows 11 (ex. MSI Cubi 5, 10 points de contact).
+
+---
+
+## Checklist avant livraison
+
+- [ ] `config.json` : URLs Notion OK, `AllowedHosts` corrects, PIN changé
+- [ ] Chaque carte ouvre le bon formulaire Notion
+- [ ] Saisie et envoi du formulaire fonctionnels
+- [ ] Retour auto après inactivité (60 s)
+- [ ] Bouton **Fermer** + PIN opérationnels
+- [ ] Redémarrage PC → lancement automatique de la borne
+- [ ] Logs sans erreurs répétées (`logs\application.log`)
+- [ ] Test coupure/rétablissement Internet
+
+---
+
+## Compilation locale (optionnel)
+
+Si vous préférez compiler sur un PC Windows plutôt que via GitHub Actions, installez le [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) puis :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+Résultat : `.\publish\ElvantoKiosk.exe` (runtime .NET embarqué).
+
+---
+
+## Aperçu design sur Mac
+
+Le fichier `preview/index.html` permet de visualiser la page d'accueil dans Safari/Chrome (logo, cartes, dialog PIN). Ce n'est **pas** l'application réelle — les formulaires Notion ne s'affichent pas dans cette maquette.
+
+```bash
+open preview/index.html
+```
+
+---
+
+## Structure du projet
+
+```
+Elvanto/
+├─ .github/workflows/build.yml   # Build GitHub Actions → artifact win-x64
+├─ ElvantoKiosk.sln
+├─ build.ps1                     # Compilation locale (optionnel)
+├─ installer/
+│  ├─ install.ps1
+│  └─ uninstall.ps1
+├─ preview/
+│  └─ index.html                 # Maquette design (Mac)
+├─ src/ElvantoKiosk/
+│  ├─ config.json                # Configuration — MODIFIABLE sans rebuild
+│  ├─ assets/LOGO-ICC.png
+│  ├─ MainWindow.xaml(.cs)       # Kiosque + WebView2
+│  ├─ Controls/                  # HomeView, PinDialog
+│  ├─ Models/                    # AppConfig, FormEntry
+│  └─ Services/                  # Config, Logger, IdleTime, KeyboardHook
+└─ README.md
+```
 
 ---
 
 ## Journalisation
 
-Les événements et erreurs (connexion, chargement, démarrage WebView2…) sont
-enregistrés dans :
+Événements et erreurs enregistrés dans :
 
 ```
 <dossier d'installation>\logs\application.log
@@ -202,26 +269,11 @@ Rotation automatique au-delà de 5 Mo.
 
 ---
 
-## Sécurité & verrouillage complet de Windows
+## Sécurité
 
-L'application bloque déjà la plupart des raccourcis (touche Windows, Alt+Tab,
-Alt+Échap, Ctrl+Échap, Alt+F4, F11, F5, raccourcis navigateur…) via un hook
-clavier bas niveau, restreint la navigation aux `AllowedHosts` et empêche
-l'ouverture de nouvelles fenêtres.
+L'application bloque la plupart des raccourcis (touche Windows, Alt+Tab, Alt+F4, F11, F5, Ctrl+L/W/N/T…), restreint la navigation aux `AllowedHosts` et empêche l'ouverture de nouvelles fenêtres.
 
-**Limite technique :** `Ctrl+Alt+Suppr` et `Ctrl+Maj+Échap` (Gestionnaire des
-tâches) ne peuvent **pas** être interceptés par une application. Pour un
-verrouillage total d'une borne en libre accès, complétez par une configuration
-Windows dédiée :
-
-- **Compte kiosque dédié** (utilisateur standard, sans droits admin).
-- **Accès attribué / Shell Launcher** (Windows 10/11 Pro/Entreprise) pour
-  remplacer l'explorateur par l'application.
-- Stratégies de groupe : masquer le Gestionnaire des tâches, désactiver le
-  changement rapide d'utilisateur, etc.
-
-Ces réglages relèvent de l'administration système Windows et viennent en
-complément de l'application.
+**Limite** : `Ctrl+Alt+Suppr` et `Ctrl+Maj+Échap` ne peuvent pas être interceptés. Pour un verrouillage total, compléter avec un compte kiosque dédié et les stratégies Windows (Assigned Access, GPO).
 
 ---
 
@@ -229,10 +281,9 @@ complément de l'application.
 
 | Symptôme | Piste |
 |---|---|
-| Page d'erreur « Connexion indisponible » | Vérifier la connexion Internet ; consulter `logs\application.log`. |
-| « WebView2 n'est pas installé » | Relancer `install.ps1` (installe le runtime) ou installer manuellement. |
-| Un bouton de formulaire ne charge rien | Vérifier l'URL dans `config.json` et que son domaine est dans `AllowedHosts`. |
-| Le logo ne s'affiche pas | Vérifier `LogoPath` et la présence du fichier ; sinon le nom de l'organisation s'affiche. |
-| Impossible de quitter | Ctrl+Maj+Q puis PIN (`AdminPin` dans `config.json`). |
-```
-# Elvanto
+| « Connexion indisponible » | Vérifier Internet ; consulter `logs\application.log`. |
+| « WebView2 n'est pas installé » | Relancer `install.ps1`. |
+| Formulaire ne charge pas | URL dans `config.json` ; domaine dans `AllowedHosts` ; formulaire Notion en mode public. |
+| Logo absent | Vérifier `LogoPath` et `assets/LOGO-ICC.png`. |
+| Impossible de quitter | Bouton Fermer ou Ctrl+Maj+Q + PIN. |
+| `config.json` ne s'enregistre pas | Éditer en administrateur (`C:\Program Files\...`). |
