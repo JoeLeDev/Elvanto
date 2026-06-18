@@ -15,23 +15,54 @@
         <!-- Page d'accueil -->
         <controls:HomeView x:Name="Home" />
 
-        <!-- Navigateur embarqué pour les formulaires Elvanto -->
-        <wv2:WebView2 x:Name="Web" Visibility="Collapsed" />
+        <!-- Vue formulaire : barres hors WebView2 (sinon Notion les recouvre) -->
+        <Grid x:Name="FormContainer" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="72" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="72" />
+            </Grid.RowDefinitions>
 
-        <!-- Barre supérieure (visible uniquement pendant l'affichage d'un formulaire) -->
-        <Grid x:Name="TopBar" VerticalAlignment="Top" Height="64"
-              Background="#CC0F172A" Visibility="Collapsed">
-            <Button x:Name="HomeButton" Content="&#8592;  Accueil"
-                    Style="{StaticResource PrimaryButton}"
-                    HorizontalAlignment="Left" VerticalAlignment="Center"
-                    Margin="20,0,0,0" Click="HomeButton_Click" />
-            <TextBlock x:Name="FormTitleText"
-                       Foreground="{StaticResource TextBrush}"
-                       FontSize="18" FontWeight="SemiBold"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <!-- Barre supérieure : titre du formulaire -->
+            <Grid x:Name="TopBar" Grid.Row="0" Background="#0B1120">
+                <TextBlock x:Name="FormTitleText"
+                           Foreground="{StaticResource TextBrush}"
+                           FontSize="20" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Margin="24,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+
+            <!-- Zone Notion (WebView2 uniquement ici — ne couvre pas les barres) -->
+            <Grid Grid.Row="1" Background="#FFFFFF">
+                <wv2:WebView2 x:Name="Web" />
+                <Border x:Name="FormLoadingPlaceholder" Background="#0B1120" Visibility="Collapsed">
+                    <TextBlock Text="Chargement…" Foreground="{StaticResource TextBrush}"
+                               FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+
+            <!-- Barre inférieure -->
+            <Grid x:Name="BottomBar" Grid.Row="2" Background="#0B1120">
+                <Button x:Name="FormHomeButton"
+                        Style="{StaticResource FormHomeButton}"
+                        Content="&#8592;  Revenir à l'accueil"
+                        HorizontalAlignment="Left" VerticalAlignment="Center"
+                        Margin="20,0,0,0" Click="HomeButton_Click" />
+                <Button x:Name="FormAdminExitButton"
+                        Style="{StaticResource AdminExitButton}"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Margin="0,0,20,0" Click="AdminExitButton_Click"
+                        ToolTip="Administration">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#128274;" FontSize="22" HorizontalAlignment="Center" />
+                        <TextBlock Text="Fermer" FontSize="11" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Button>
+            </Grid>
         </Grid>
 
-        <!-- Overlay d'erreur réseau / chargement -->
+        <!-- Overlay d'erreur réseau -->
         <Grid x:Name="ErrorOverlay" Background="{StaticResource BackgroundBrush}" Visibility="Collapsed">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="700">
                 <TextBlock Text="&#9888;" FontSize="72" HorizontalAlignment="Center"
@@ -41,7 +72,7 @@
                            FontSize="34" FontWeight="Bold"
                            HorizontalAlignment="Center" />
                 <TextBlock x:Name="ErrorDetailText"
-                           Text="Le formulaire n'a pas pu être chargé. Vérifiez la connexion Internet. Une nouvelle tentative sera effectuée automatiquement."
+                           Text="Le formulaire n'a pas pu être chargé. Vérifiez la connexion Internet."
                            Foreground="{StaticResource MutedTextBrush}"
                            FontSize="20" TextAlignment="Center" TextWrapping="Wrap"
                            HorizontalAlignment="Center" Margin="0,16,0,32" />
@@ -54,21 +85,12 @@
             </StackPanel>
         </Grid>
 
-        <!-- Indicateur de chargement -->
-        <Border x:Name="LoadingOverlay" Background="#990F172A" Visibility="Collapsed">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Chargement…" Foreground="{StaticResource TextBrush}"
-                           FontSize="26" HorizontalAlignment="Center" />
-            </StackPanel>
-        </Border>
-
-        <!-- Bouton admin : quitter l'application (code PIN requis) -->
+        <!-- Bouton admin sur la page d'accueil uniquement -->
         <Button x:Name="AdminExitButton"
                 Style="{StaticResource AdminExitButton}"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Margin="0,0,24,24"
-                Panel.ZIndex="100"
                 Click="AdminExitButton_Click"
                 ToolTip="Administration">
             <StackPanel HorizontalAlignment="Center">

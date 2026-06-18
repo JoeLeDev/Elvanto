@@ -72,8 +72,15 @@ public static class ConfigService
     {
         return new AppConfig
         {
-            AllowedHosts = { "elvanto.eu", "elvanto.com", "elvanto.com.au" },
-            SubmitUrlKeywords = { "thank", "merci", "success", "complete", "submitted", "confirmation" },
+            AllowedHosts = { "notion.so", "notion.site", "notion.com" },
+            SubmitUrlKeywords = { "thank", "success", "complete", "submitted", "confirmation" },
+            SubmitTextKeywords =
+            {
+                "submission has been received",
+                "votre réponse a été enregistrée",
+                "formulaire envoyé",
+                "merci pour votre envoi"
+            },
             Forms =
             {
                 new FormEntry

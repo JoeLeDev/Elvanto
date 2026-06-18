@@ -25,32 +25,37 @@
             <Style x:Key="FormCardButton" TargetType="Button">
                 <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-                <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="Padding" Value="28" />
-                <Setter Property="Margin" Value="14" />
+                <Setter Property="Background" Value="#141C2E" />
+                <Setter Property="BorderBrush" Value="#2A3A55" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="24" />
+                <Setter Property="Margin" Value="12" />
                 <Setter Property="Width" Value="320" />
-                <Setter Property="Height" Value="180" />
+                <Setter Property="Height" Value="200" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Stretch" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="border"
                                     Background="{TemplateBinding Background}"
-                                    CornerRadius="18"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="20"
                                     Padding="{TemplateBinding Padding}">
                                 <Border.Effect>
-                                    <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.35" Color="#000000" />
+                                    <DropShadowEffect BlurRadius="28" ShadowDepth="0" Opacity="0.4" Color="#000000" />
                                 </Border.Effect>
-                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrush}" />
+                                    <Setter TargetName="border" Property="Background" Value="#1A2740" />
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="{StaticResource AccentHoverBrush}" />
+                                    <Setter TargetName="border" Property="Background" Value="#1E3A5F" />
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentHoverBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -108,6 +113,39 @@
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
                                     <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Bouton retour accueil (formulaire) — tactile -->
+            <Style x:Key="FormHomeButton" TargetType="Button">
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="MinHeight" Value="56" />
+                <Setter Property="Padding" Value="20,12" />
+                <Setter Property="FontSize" Value="17" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="{TemplateBinding Background}"
+                                    CornerRadius="14" Padding="{TemplateBinding Padding}">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.35" Color="#000000" />
+                                </Border.Effect>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource AccentHoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#1E40AF" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

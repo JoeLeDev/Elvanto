@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -18,6 +19,7 @@ public partial class MainWindow : Window
     private readonly KeyboardHook _keyboardHook = new();
     private readonly DispatcherTimer _idleTimer;
     private readonly DispatcherTimer _submitTimer;
+    private readonly DispatcherTimer _submitCheckTimer;
 
     private FormEntry? _currentForm;
     private bool _inFormMode;
@@ -42,6 +44,9 @@ public partial class MainWindow : Window
 
         _submitTimer = new DispatcherTimer();
         _submitTimer.Tick += SubmitTimer_Tick;
+
+        _submitCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _submitCheckTimer.Tick += SubmitCheckTimer_Tick;
 
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -84,6 +89,7 @@ public partial class MainWindow : Window
             Web.CoreWebView2.NewWindowRequested += OnNewWindowRequested;
             Web.CoreWebView2.SourceChanged += OnSourceChanged;
             Web.CoreWebView2.ProcessFailed += OnProcessFailed;
+            Web.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
 
             _webViewReady = true;
             Logger.Info("WebView2 initialisé.");
@@ -130,6 +136,14 @@ public partial class MainWindow : Window
 
             if (e.WebErrorStatus != CoreWebView2WebErrorStatus.OperationCanceled)
                 ShowError(message);
+
+            return;
+        }
+
+        if (_inFormMode)
+        {
+            _ = InjectSubmitDetectionScriptAsync();
+            _submitCheckTimer.Start();
         }
     }
 
@@ -143,11 +157,106 @@ public partial class MainWindow : Window
                 !string.IsNullOrWhiteSpace(k) &&
                 url.Contains(k, StringComparison.OrdinalIgnoreCase)))
         {
-            Logger.Info($"Soumission détectée (URL : {url}). Retour à l'accueil dans {_config.ReturnDelayAfterSubmitSeconds}s.");
-            _submitDetected = true;
-            _submitTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, _config.ReturnDelayAfterSubmitSeconds));
-            _submitTimer.Start();
+            TriggerSubmitReturn($"URL : {url}");
         }
+    }
+
+    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        if (!_inFormMode || _submitDetected)
+            return;
+
+        var message = e.TryGetWebMessageAsString();
+        if (message == "submitDetected")
+            TriggerSubmitReturn("page Notion (confirmation)");
+    }
+
+    private async System.Threading.Tasks.Task InjectSubmitDetectionScriptAsync()
+    {
+        if (!_webViewReady || _config.SubmitTextKeywords.Count == 0)
+            return;
+
+        try
+        {
+            var keywordsJson = JsonSerializer.Serialize(_config.SubmitTextKeywords);
+            var script = $@"
+(function() {{
+  const keywords = {keywordsJson};
+  function matches(text) {{
+    const lower = (text || '').toLowerCase();
+    return keywords.some(k => k && lower.includes(String(k).toLowerCase()));
+  }}
+  function notifyIfSubmitted() {{
+    const text = document.body ? document.body.innerText : '';
+    if (matches(text)) {{
+      window.chrome.webview.postMessage('submitDetected');
+      return true;
+    }}
+    return false;
+  }}
+  function start() {{
+    if (!document.body) return;
+    if (notifyIfSubmitted()) return;
+    const observer = new MutationObserver(() => {{
+      if (notifyIfSubmitted()) observer.disconnect();
+    }});
+    observer.observe(document.body, {{ childList: true, subtree: true, characterData: true }});
+  }}
+  if (document.readyState === 'loading') {{
+    document.addEventListener('DOMContentLoaded', start);
+  }} else {{
+    start();
+  }}
+}})();";
+
+            await Web.CoreWebView2.ExecuteScriptAsync(script);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Injection du script de détection Notion impossible.", ex);
+        }
+    }
+
+    private async void SubmitCheckTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_inFormMode || _submitDetected || !_webViewReady)
+            return;
+
+        try
+        {
+            var raw = await Web.CoreWebView2.ExecuteScriptAsync(
+                "document.body ? document.body.innerText : ''");
+
+            var pageText = JsonSerializer.Deserialize<string>(raw) ?? string.Empty;
+            if (ContainsSubmitTextKeyword(pageText))
+                TriggerSubmitReturn("texte de confirmation Notion");
+        }
+        catch
+        {
+            // Ignorer les erreurs transitoires de lecture DOM.
+        }
+    }
+
+    private bool ContainsSubmitTextKeyword(string pageText)
+    {
+        if (string.IsNullOrWhiteSpace(pageText))
+            return false;
+
+        return _config.SubmitTextKeywords.Any(k =>
+            !string.IsNullOrWhiteSpace(k) &&
+            pageText.Contains(k, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void TriggerSubmitReturn(string source)
+    {
+        if (_submitDetected)
+            return;
+
+        Logger.Info($"Soumission détectée ({source}). Retour à l'accueil dans {_config.ReturnDelayAfterSubmitSeconds}s.");
+        _submitDetected = true;
+        _submitCheckTimer.Stop();
+        _submitTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, _config.ReturnDelayAfterSubmitSeconds));
+        _submitTimer.Start();
     }
 
     private void OnNewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
@@ -214,12 +323,16 @@ public partial class MainWindow : Window
         _inFormMode = true;
         _submitDetected = false;
         _submitTimer.Stop();
+        _submitCheckTimer.Stop();
 
         FormTitleText.Text = form.Title;
         Home.Visibility = Visibility.Collapsed;
         ErrorOverlay.Visibility = Visibility.Collapsed;
-        Web.Visibility = Visibility.Visible;
-        TopBar.Visibility = _config.ShowHomeButton ? Visibility.Visible : Visibility.Collapsed;
+        AdminExitButton.Visibility = Visibility.Collapsed;
+        FormContainer.Visibility = Visibility.Visible;
+
+        var showHome = _config.ShowHomeButton;
+        FormHomeButton.Visibility = showHome ? Visibility.Visible : Visibility.Collapsed;
         ShowLoading();
 
         Logger.Info($"Ouverture du formulaire « {form.Title} » : {form.Url}");
@@ -236,10 +349,11 @@ public partial class MainWindow : Window
         _inFormMode = false;
         _submitDetected = false;
         _submitTimer.Stop();
+        _submitCheckTimer.Stop();
         _currentForm = null;
 
-        Web.Visibility = Visibility.Collapsed;
-        TopBar.Visibility = Visibility.Collapsed;
+        FormContainer.Visibility = Visibility.Collapsed;
+        AdminExitButton.Visibility = Visibility.Visible;
         ErrorOverlay.Visibility = Visibility.Collapsed;
         HideLoading();
         Home.Visibility = Visibility.Visible;
@@ -291,18 +405,21 @@ public partial class MainWindow : Window
 
     private void ShowLoading()
     {
-        LoadingOverlay.Visibility = Visibility.Visible;
+        FormLoadingPlaceholder.Visibility = Visibility.Visible;
+        Web.Visibility = Visibility.Collapsed;
     }
 
     private void HideLoading()
     {
-        LoadingOverlay.Visibility = Visibility.Collapsed;
+        FormLoadingPlaceholder.Visibility = Visibility.Collapsed;
+        Web.Visibility = Visibility.Visible;
     }
 
     private void ShowError(string detail)
     {
         ErrorDetailText.Text = detail;
         HideLoading();
+        FormContainer.Visibility = Visibility.Collapsed;
         ErrorOverlay.Visibility = Visibility.Visible;
     }
 
@@ -312,6 +429,8 @@ public partial class MainWindow : Window
 
         if (_currentForm != null && _webViewReady)
         {
+            FormContainer.Visibility = Visibility.Visible;
+            AdminExitButton.Visibility = Visibility.Collapsed;
             ShowLoading();
             Web.CoreWebView2.Navigate(_currentForm.Url);
         }
@@ -390,6 +509,7 @@ public partial class MainWindow : Window
 
         _idleTimer.Stop();
         _submitTimer.Stop();
+        _submitCheckTimer.Stop();
         _keyboardHook.Dispose();
         Web?.Dispose();
     }

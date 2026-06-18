@@ -15,11 +15,19 @@
   ],
   "SubmitUrlKeywords": [
     "thank",
-    "merci",
     "success",
     "complete",
     "submitted",
     "confirmation"
+  ],
+  "SubmitTextKeywords": [
+    "submission has been received",
+    "your submission has been received",
+    "votre réponse a été enregistrée",
+    "formulaire envoyé",
+    "merci pour votre envoi",
+    "thank you for submitting",
+    "FORMULAIRE_ENVOYÉ"
   ],
   "Forms": [
     {

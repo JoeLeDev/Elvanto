@@ -58,6 +58,7 @@ public partial class HomeView : UserControl
 
             LogoImage.Source = bitmap;
             LogoImage.Visibility = Visibility.Visible;
+            LogoFrame.Visibility = Visibility.Visible;
             OrgNameText.Visibility = Visibility.Collapsed;
         }
         catch (Exception ex)

@@ -37,6 +37,13 @@ public class AppConfig
     /// <summary>Mots-clés d'URL indiquant qu'un formulaire a été soumis (page de remerciement).</summary>
     public List<string> SubmitUrlKeywords { get; set; } = new();
 
+    /// <summary>
+    /// Mots-clés recherchés dans le texte affiché par Notion après soumission
+    /// (l'URL ne change souvent pas — détection via le message de confirmation).
+    /// Astuce : mettez un mot unique dans le titre de confirmation Notion (ex. « ENVOYE »).
+    /// </summary>
+    public List<string> SubmitTextKeywords { get; set; } = new();
+
     /// <summary>Liste des formulaires affichés sur la page d'accueil.</summary>
     public List<FormEntry> Forms { get; set; } = new();
 }
