@@ -31,6 +31,27 @@ public class AppConfig
     /// <summary>Efface cookies / données de session au retour à l'accueil (confidentialité entre visiteurs).</summary>
     public bool ClearDataOnReturnHome { get; set; } = true;
 
+    /// <summary>Affiche un écran de veille (horloge + logo) au démarrage et après inactivité.</summary>
+    public bool ScreensaverEnabled { get; set; } = true;
+
+    /// <summary>Sous-titre affiché sur l'écran de veille.</summary>
+    public string ScreensaverSubtitle { get; set; } = "KIOSQUE DE PRISE DE RENDEZ-VOUS";
+
+    /// <summary>Texte d'invitation tactile sur l'écran de veille.</summary>
+    public string ScreensaverPrompt { get; set; } = "TOUCHEZ L'ÉCRAN POUR COMMENCER";
+
+    /// <summary>Délai d'inactivité sur la page d'accueil avant retour à l'écran de veille (secondes).</summary>
+    public int ScreensaverIdleTimeoutSeconds { get; set; } = 120;
+
+    /// <summary>Retourne à l'écran de veille (au lieu de la page d'accueil) après un formulaire.</summary>
+    public bool ReturnToScreensaverOnHome { get; set; } = true;
+
+    /// <summary>Message affiché après soumission d'un formulaire, avant retour à l'accueil.</summary>
+    public string ThankYouMessage { get; set; } = "Merci ! Retour à l'accueil…";
+
+    /// <summary>Couleurs d'accent des cartes (hex). Une par formulaire, ou répétées cycliquement.</summary>
+    public List<string> FormCardAccentColors { get; set; } = new();
+
     /// <summary>Domaines autorisés à la navigation. Tout le reste est bloqué.</summary>
     public List<string> AllowedHosts { get; set; } = new();
 

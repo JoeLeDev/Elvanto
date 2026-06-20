@@ -3,72 +3,63 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Elvanto Kiosk — Aperçu design</title>
+  <title>ICC Kiosk — Aperçu design</title>
   <style>
     :root {
-      --bg: #0b1120;
-      --surface: #141c2e;
-      --surface-border: #2a3a55;
       --accent: #2563eb;
       --accent-hover: #1d4ed8;
-      --text: #f8fafc;
-      --muted: #94a3b8;
+      --text-dark: #0f172a;
+      --muted-dark: #64748b;
+      --ss-bg-top: #1e1538;
+      --ss-bg-mid: #120c28;
+      --ss-bg-bot: #0a0618;
+      --ss-text: #f8fafc;
+      --ss-muted: #c4b5fd;
+      --ss-accent: #a78bfa;
+      --ss-gold: #fbbf24;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
       min-height: 100vh;
       overflow: hidden;
     }
 
-    .bg-glow {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-
-    .bg-glow .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(2px);
-    }
-
-    .bg-glow .orb-blue {
-      width: 720px; height: 720px;
-      background: rgba(30, 64, 175, 0.14);
-      top: -200px; left: -260px;
-    }
-
-    .bg-glow .orb-purple {
-      width: 560px; height: 560px;
-      background: rgba(124, 58, 237, 0.10);
-      bottom: -120px; right: -180px;
-    }
-
-    .bg-glow .orb-gold {
-      width: 420px; height: 420px;
-      background: rgba(202, 138, 4, 0.07);
-      top: -80px; left: 50%;
-      transform: translateX(-50%);
-    }
-
-    /* Bandeau « aperçu » (absent dans l'appli réelle) */
     .preview-banner {
       position: fixed;
       top: 0; left: 0; right: 0;
-      z-index: 100;
+      z-index: 300;
       background: #422006;
       color: #fde68a;
       text-align: center;
       font-size: 13px;
       padding: 6px 12px;
     }
+
+    .preview-nav {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 250;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: 70vw;
+    }
+
+    .preview-nav button {
+      background: rgba(15, 23, 42, 0.9);
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .preview-nav button:hover { background: #334155; }
 
     .screen {
       display: none;
@@ -81,203 +72,288 @@
 
     .screen.active { display: flex; }
 
-    /* ----- Page d'accueil ----- */
-    .home-header {
-      text-align: center;
-      padding: 40px 24px 0;
+    /* Veille */
+    #screen-screensaver {
+      background: linear-gradient(180deg, var(--ss-bg-top) 0%, var(--ss-bg-mid) 55%, var(--ss-bg-bot) 100%);
+      color: var(--ss-text);
+      cursor: pointer;
+      user-select: none;
     }
 
-    .logo-frame {
-      display: inline-block;
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      border-radius: 20px;
-      padding: 16px 24px;
+    #screen-screensaver::before,
+    #screen-screensaver::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
     }
 
-    .home-header img {
-      max-height: 130px;
-      width: auto;
-      display: block;
+    #screen-screensaver::before {
+      width: 900px; height: 900px;
+      top: -280px; left: -350px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.12) 0%, transparent 70%);
     }
 
-    .home-body {
+    #screen-screensaver::after {
+      width: 700px; height: 700px;
+      bottom: -200px; right: -250px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.10) 0%, transparent 70%);
+    }
+
+    .ss-content {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 48px;
       text-align: center;
+      padding: 40px 24px;
+      position: relative;
+      z-index: 2;
     }
 
-    .welcome-box {
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      border-radius: 16px;
-      padding: 20px 28px;
-      max-width: 820px;
-      margin-bottom: 36px;
-    }
+    .ss-logo img { max-height: 120px; width: auto; }
 
-    .welcome-kicker {
-      color: var(--accent);
-      font-size: 13px;
+    .ss-org {
+      font-size: clamp(28px, 4vw, 42px);
       font-weight: 700;
-      letter-spacing: 0.12em;
-      margin-bottom: 8px;
-    }
-
-    .welcome-title {
-      font-size: clamp(36px, 5vw, 48px);
-      font-weight: 700;
-    }
-
-    .welcome-message {
-      font-size: clamp(17px, 2.2vw, 20px);
-      color: var(--muted);
       margin-top: 12px;
-      line-height: 1.45;
     }
 
-    .forms-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 320px);
-      gap: 12px;
-      justify-content: center;
-      max-width: 680px;
+    .ss-subtitle {
+      color: var(--ss-muted);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      margin-top: 10px;
+      text-transform: uppercase;
     }
 
-    @media (max-width: 720px) {
-      .forms-grid {
-        grid-template-columns: 320px;
-      }
-    }
-
-    .form-card {
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      border-radius: 20px;
-      padding: 24px;
-      width: 320px;
-      height: 200px;
-      text-align: left;
-      cursor: pointer;
-      color: var(--text);
-      box-shadow: 0 0 28px rgba(0, 0, 0, 0.4);
-      transition: border-color 0.15s ease, background 0.15s ease;
+    .ss-clock {
+      margin-top: 48px;
       display: flex;
-      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .ss-time {
+      font-size: clamp(72px, 14vw, 120px);
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .ss-colon { color: var(--ss-gold); font-size: clamp(72px, 14vw, 120px); font-weight: 300; line-height: 1; }
+    .ss-seconds { color: var(--ss-accent); font-size: clamp(24px, 4vw, 36px); font-weight: 300; margin-top: 18px; margin-left: 8px; }
+    .ss-date { color: var(--ss-accent); font-size: 15px; font-weight: 600; letter-spacing: 0.14em; margin-top: 8px; text-transform: uppercase; }
+
+    .ss-prompt-wrap { margin-top: 56px; }
+
+    .ss-pulse-ring {
+      width: 48px; height: 48px;
+      border: 2px solid var(--ss-gold);
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.5;
+    }
+
+    .ss-pulse-dot {
+      width: 14px; height: 14px;
+      background: var(--ss-gold);
+      border-radius: 50%;
+      animation: pulse 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.35; transform: scale(0.9); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .ss-prompt {
+      color: var(--ss-muted);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    /* Accueil */
+    #screen-home {
+      background: #f8fafc;
+      color: var(--text-dark);
+      padding: 24px 28px;
+      overflow: hidden;
       position: relative;
     }
 
-    .form-card:hover {
-      background: #1a2740;
-      border-color: var(--accent);
-    }
-
-    .form-card:active {
-      background: #1e3a5f;
-      border-color: var(--accent-hover);
-    }
-
-    .form-card .accent-bar {
-      width: 40px;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--accent);
-      margin-bottom: 14px;
-    }
-
-    .form-card h3 {
-      font-size: 24px;
-      font-weight: 700;
-      line-height: 1.2;
-      margin-bottom: 10px;
-    }
-
-    .form-card p {
-      font-size: 15px;
-      color: var(--muted);
-      line-height: 1.45;
-      flex: 1;
-    }
-
-    .form-card .arrow {
-      align-self: flex-end;
-      width: 36px;
-      height: 36px;
+    #screen-home::before,
+    #screen-home::after {
+      content: "";
+      position: absolute;
       border-radius: 50%;
-      background: #253049;
-      color: var(--accent);
-      font-size: 18px;
+      pointer-events: none;
+    }
+
+    #screen-home::before {
+      width: 480px; height: 480px;
+      top: -120px; right: -160px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+    }
+
+    #screen-home::after {
+      width: 360px; height: 360px;
+      bottom: -80px; left: -120px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.04) 0%, transparent 70%);
+    }
+
+    .home-layout {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: calc(100vh - 32px);
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .home-hero {
+      flex: 1;
+      min-height: 28vh;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      box-shadow: 0 0 24px rgba(15, 23, 42, 0.07);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 36px 48px;
+    }
+
+    .home-hero img { max-height: 128px; width: auto; }
+    .home-hero .kicker { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 0.14em; margin-top: 16px; }
+    .home-hero h1 { font-size: clamp(26px, 3.5vw, 32px); font-weight: 700; margin-top: 6px; }
+    .home-hero .divider { width: 64px; height: 1px; background: #e2e8f0; margin: 16px auto 0; }
+    .home-hero p { font-size: 18px; color: var(--muted-dark); margin-top: 16px; line-height: 1.5; max-width: 680px; }
+
+    .forms-row {
+      flex: 1.65;
+      min-height: 45vh;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 900px) {
+      .forms-row { grid-template-columns: repeat(2, 1fr); min-height: 50vh; }
+    }
+
+    .form-card {
+      --card-accent: #2563eb;
+      position: relative;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px 24px 24px;
+      min-height: 100%;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-dark);
+      box-shadow: 0 2px 20px rgba(15, 23, 42, 0.08);
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .form-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: var(--card-accent);
+    }
+
+    .form-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 28px rgba(37, 99, 235, 0.14);
+      transform: translateY(-2px);
+    }
+
+    .form-card:active,
+    .form-card.pressed {
+      transform: scale(0.97);
+      background: #f8fafc;
+    }
+
+    .form-card .card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--card-accent) 14%, transparent);
+      color: var(--card-accent);
+      font-size: 24px;
       font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: 12px;
+      margin: 12px 0 18px;
+      flex-shrink: 0;
+      overflow: hidden;
     }
 
-    .home-footer {
-      text-align: center;
-      padding: 14px 48px 18px;
-      font-size: 13px;
-      color: var(--muted);
-      opacity: 0.7;
-      border-top: 1px solid #1e293b;
-      margin: 0 48px;
+    .form-card .card-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px;
     }
 
-    /* ----- Vue formulaire ----- */
+    .form-card .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-card h3 { font-size: clamp(20px, 2.2vw, 24px); font-weight: 700; line-height: 1.25; max-width: 240px; }
+    .form-card p { font-size: 15px; color: var(--muted-dark); line-height: 1.45; margin-top: 12px; max-width: 240px; }
+
+    .form-card .card-arrow {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--card-accent) 14%, transparent);
+      color: var(--card-accent);
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+
+    /* Formulaire */
+    #screen-form { background: #0b1120; color: #f8fafc; }
+
     .top-bar {
       display: flex;
       align-items: center;
       height: 72px;
-      background: rgba(11, 17, 32, 0.92);
+      background: #0b1120;
       padding: 0 20px;
       flex-shrink: 0;
-      position: relative;
-      z-index: 50;
     }
 
-    .btn-home-form {
-      background: var(--accent);
-      color: var(--text);
-      border: none;
-      border-radius: 14px;
-      padding: 12px 20px;
-      min-height: 56px;
-      font-size: 17px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 0 16px rgba(0, 0, 0, 0.35);
-    }
-
-    .btn-home-form:hover { background: var(--accent-hover); }
-
-    .form-home-floating {
-      /* dans la barre du bas, pas en overlay */
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: var(--text);
-      border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-primary:hover { background: var(--accent-hover); }
-
-    .top-bar-title {
-      flex: 1;
-      text-align: center;
-      font-size: 20px;
-      font-weight: 600;
-    }
+    .top-bar-title { flex: 1; text-align: center; font-size: 20px; font-weight: 600; }
 
     .form-viewport {
       flex: 1;
@@ -285,7 +361,6 @@
       align-items: center;
       justify-content: center;
       background: #fff;
-      margin: 0;
       min-height: 0;
     }
 
@@ -297,134 +372,111 @@
       background: #0b1120;
       padding: 0 20px;
       flex-shrink: 0;
+      gap: 12px;
     }
 
-    .form-placeholder {
-      text-align: center;
-      color: #64748b;
-      padding: 40px;
-      max-width: 520px;
-    }
-
-    .form-placeholder svg {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 20px;
-      opacity: 0.5;
-    }
-
-    .form-placeholder h2 {
-      font-size: 22px;
-      color: #334155;
-      margin-bottom: 12px;
-    }
-
-    .form-placeholder p {
-      font-size: 16px;
-      line-height: 1.5;
-    }
-
-    .form-url {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #64748b;
-      word-break: break-all;
-    }
-
-    /* ----- Overlay erreur (aperçu) ----- */
-    .error-demo {
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      z-index: 50;
-    }
-
-    .error-demo button {
-      background: #334155;
-      color: var(--text);
+    .btn-home-form {
+      background: var(--accent);
+      color: #f8fafc;
       border: none;
-      border-radius: 10px;
-      padding: 10px 16px;
-      font-size: 14px;
+      border-radius: 14px;
+      padding: 12px 20px;
+      min-height: 56px;
+      font-size: 17px;
+      font-weight: 600;
       cursor: pointer;
-      opacity: 0.8;
     }
 
-    .error-demo button:hover { opacity: 1; }
+    .btn-home-form:hover { background: var(--accent-hover); }
 
+    .btn-simulate {
+      background: #334155;
+      color: #f8fafc;
+      border: none;
+      border-radius: 14px;
+      padding: 12px 16px;
+      min-height: 56px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .form-placeholder { text-align: center; color: #64748b; padding: 40px; max-width: 520px; }
+    .form-placeholder svg { width: 64px; height: 64px; margin-bottom: 20px; opacity: 0.5; }
+    .form-placeholder h2 { font-size: 22px; color: #334155; margin-bottom: 12px; }
+    .form-url { margin-top: 10px; font-size: 13px; word-break: break-all; }
+
+    /* Overlay merci */
+    .thankyou-overlay {
+      display: none;
+      position: fixed;
+      inset: 32px 0 0 0;
+      z-index: 120;
+      background: rgba(15, 23, 42, 0.8);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .thankyou-overlay.visible { display: flex; }
+
+    .thankyou-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 560px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+      animation: popIn 0.35s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .thankyou-card .check { font-size: 56px; color: #22c55e; margin-bottom: 16px; }
+    .thankyou-card h2 { font-size: 28px; font-weight: 700; color: #0f172a; line-height: 1.3; }
+    .thankyou-card p { font-size: 18px; color: #64748b; margin-top: 14px; }
+
+    /* Erreur */
     .error-overlay {
       display: none;
       position: fixed;
       inset: 32px 0 0 0;
-      background: var(--bg);
+      background: #0b1120;
       z-index: 90;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
       padding: 40px;
+      color: #f8fafc;
     }
 
     .error-overlay.visible { display: flex; }
 
-    .error-overlay .icon { font-size: 72px; margin-bottom: 20px; }
-
-    .error-overlay h2 {
-      font-size: 34px;
-      font-weight: 700;
-      margin-bottom: 16px;
-    }
-
-    .error-overlay p {
-      font-size: 20px;
-      color: var(--muted);
-      max-width: 700px;
-      margin-bottom: 32px;
-      line-height: 1.4;
-    }
-
-    .error-actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .error-actions .btn-secondary {
-      background: #334155;
-    }
-
-    /* ----- Bouton admin (coin inférieur droit) ----- */
+    /* Admin discret */
     .admin-exit-btn {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 10px;
+      right: 10px;
       z-index: 80;
-      min-width: 72px;
-      min-height: 72px;
-      background: rgba(30, 41, 59, 0.4);
+      width: 36px;
+      height: 36px;
+      background: transparent;
       border: none;
-      border-radius: 16px;
-      color: var(--muted);
+      border-radius: 8px;
+      color: #64748b;
+      opacity: 0.22;
       cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      transition: background 0.15s, color 0.15s;
+      font-size: 14px;
+      transition: opacity 0.15s, background 0.15s;
     }
 
-    .admin-exit-btn:hover {
-      background: rgba(30, 41, 59, 0.6);
-      color: var(--text);
-    }
+    .admin-exit-btn:hover { opacity: 0.75; background: rgba(100, 116, 139, 0.12); }
 
-    .admin-exit-btn .icon { font-size: 22px; }
-    .admin-exit-btn .label { font-size: 11px; font-weight: 600; margin-top: 4px; }
-
-    /* ----- Dialog PIN ----- */
-    .pin-overlay {
+    /* PIN */
+    .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
@@ -435,159 +487,168 @@
       padding: 24px;
     }
 
-    .pin-overlay.visible { display: flex; }
+    .modal-overlay.visible { display: flex; }
 
     .pin-dialog {
-      background: var(--surface);
+      background: #1e293b;
       border-radius: 16px;
       padding: 28px;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+      color: #f8fafc;
     }
 
-    .pin-dialog h2 {
-      font-size: 24px;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-
-    .pin-dialog .subtitle {
-      color: var(--muted);
-      text-align: center;
-      font-size: 15px;
-      margin-bottom: 20px;
-    }
-
-    .pin-display {
-      background: var(--bg);
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-size: 36px;
-      font-weight: 700;
-      text-align: center;
-      min-height: 44px;
-      margin-bottom: 16px;
-      letter-spacing: 8px;
-    }
-
-    .pin-error {
-      color: #f87171;
-      text-align: center;
-      font-size: 14px;
-      margin-bottom: 8px;
-      display: none;
-    }
-
+    .pin-dialog h2 { font-size: 24px; text-align: center; margin-bottom: 8px; }
+    .pin-dialog .subtitle { color: #94a3b8; text-align: center; font-size: 15px; margin-bottom: 20px; }
+    .pin-display { background: #0b1120; border-radius: 10px; padding: 12px 16px; font-size: 36px; font-weight: 700; text-align: center; min-height: 44px; margin-bottom: 16px; letter-spacing: 8px; }
+    .pin-error { color: #f87171; text-align: center; font-size: 14px; margin-bottom: 8px; display: none; }
     .pin-error.visible { display: block; }
 
-    .pin-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      max-width: 300px;
-      margin: 0 auto;
+    .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 300px; margin: 0 auto; }
+    .pin-key { background: #334155; border: none; border-radius: 12px; color: #f8fafc; font-size: 28px; font-weight: 600; min-height: 72px; cursor: pointer; }
+    .pin-key:hover { background: #475569; }
+    .pin-actions { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+
+    /* Panneau admin */
+    .admin-panel {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 920px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: #f8fafc;
     }
 
-    .pin-key {
+    .admin-panel h2 { font-size: 26px; margin-bottom: 4px; }
+    .admin-panel .version { color: #94a3b8; font-size: 14px; margin-bottom: 16px; }
+
+    .admin-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .admin-tabs button {
       background: #334155;
       border: none;
-      border-radius: 12px;
-      color: var(--text);
-      font-size: 28px;
-      font-weight: 600;
-      min-height: 72px;
+      color: #f8fafc;
+      padding: 10px 16px;
+      border-radius: 10px;
       cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
     }
 
-    .pin-key:hover { background: #475569; }
-    .pin-key:active { background: var(--accent); }
+    .admin-tabs button.active { background: var(--accent); }
 
-    .pin-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-top: 20px;
+    .admin-tab { display: none; overflow-y: auto; flex: 1; padding-right: 4px; }
+    .admin-tab.active { display: block; }
+
+    .admin-tab p.desc { color: #94a3b8; font-size: 13px; margin-bottom: 12px; line-height: 1.45; }
+
+    .admin-field { margin-bottom: 14px; }
+    .admin-field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+    .admin-field .help { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+    .admin-field input, .admin-field textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f8fafc;
+      padding: 10px;
+      font-size: 14px;
+      font-family: inherit;
     }
 
-    .pin-actions button {
-      min-width: 140px;
-      min-height: 52px;
-      font-size: 18px;
+    .admin-field textarea { min-height: 60px; resize: vertical; }
+
+    .log-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      color: #cbd5e1;
+      max-height: 320px;
+      overflow-y: auto;
+      white-space: pre-wrap;
     }
+
+    .status-ok { color: #86efac; }
+    .status-ko { color: #fca5a5; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #f8fafc;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #334155; }
+    .btn-danger { background: #991b1b; }
+
+    .admin-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
   </style>
 </head>
 <body>
 
-  <div class="bg-glow" aria-hidden="true">
-    <div class="orb orb-blue"></div>
-    <div class="orb orb-purple"></div>
-    <div class="orb orb-gold"></div>
-  </div>
-
   <div class="preview-banner">
-    Aperçu design uniquement — ouvrez ce fichier dans Safari ou Chrome sur Mac. L'application réelle tourne sur Windows.
+    Aperçu design — synchronisé avec config.json. PIN démo : <strong>2468</strong>
   </div>
 
-  <!-- Écran d'accueil -->
-  <div id="screen-home" class="screen active">
-    <header class="home-header">
-      <div class="logo-frame">
+  <nav class="preview-nav">
+    <button type="button" id="nav-screensaver">Veille</button>
+    <button type="button" id="nav-home">Accueil</button>
+    <button type="button" id="nav-form">Formulaire</button>
+    <button type="button" id="nav-thankyou">Merci (3s)</button>
+    <button type="button" id="nav-admin">Admin</button>
+    <button type="button" id="btn-show-error">Erreur</button>
+  </nav>
+
+  <div id="screen-screensaver" class="screen active">
+    <div class="ss-content">
+      <div class="ss-logo">
         <img src="../src/ElvantoKiosk/assets/LOGO-ICC.png" alt="ICC" />
       </div>
-    </header>
-
-    <main class="home-body">
-      <div class="welcome-box">
-        <p class="welcome-kicker">ACCUEIL</p>
-        <h1 class="welcome-title">Bienvenue</h1>
-        <p class="welcome-message">Merci de compléter l'un des formulaires ci-dessous.</p>
+      <p class="ss-org" id="ss-org">Impact Centre Chrétien</p>
+      <p class="ss-subtitle" id="ss-subtitle">KIOSQUE DE PRISE DE RENDEZ-VOUS</p>
+      <div class="ss-clock">
+        <span class="ss-time" id="clock-hours">00</span>
+        <span class="ss-colon">:</span>
+        <span class="ss-time" id="clock-minutes">00</span>
+        <span class="ss-seconds" id="clock-seconds">00</span>
       </div>
-
-      <div class="forms-grid">
-        <button class="form-card" type="button" data-title="Première visite"
-                data-url="https://jolly-drill-522.notion.site/f20ee63673094bc5a335a5c8c7b218b4?pvs=105">
-          <div class="accent-bar"></div>
-          <h3>Première visite</h3>
-          <p>Inscrivez-vous si c'est votre première venue.</p>
-          <span class="arrow">→</span>
-        </button>
-
-        <button class="form-card" type="button" data-title="Enregistrement enfants"
-                data-url="https://jolly-drill-522.notion.site/3e722e0ed85282788a3a01f97eb85565?pvs=105">
-          <div class="accent-bar"></div>
-          <h3>Enregistrement enfants</h3>
-          <p>Enregistrez vos enfants pour l'accueil.</p>
-          <span class="arrow">→</span>
-        </button>
-
-        <button class="form-card" type="button" data-title="Demande de prière"
-                data-url="https://jolly-drill-522.notion.site/92422e0ed8528309936a81495aaa1cc7?pvs=105">
-          <div class="accent-bar"></div>
-          <h3>Demande de prière</h3>
-          <p>Partagez un sujet de prière.</p>
-          <span class="arrow">→</span>
-        </button>
-
-        <button class="form-card" type="button" data-title="Formulaire 4"
-                data-url="https://jolly-drill-522.notion.site/5f722e0ed8528384aa7701981b69d97e?pvs=105">
-          <div class="accent-bar"></div>
-          <h3>Formulaire 4</h3>
-          <p>Partagez un sujet de prière.</p>
-          <span class="arrow">→</span>
-        </button>
+      <p class="ss-date" id="clock-date">—</p>
+      <div class="ss-prompt-wrap">
+        <div class="ss-pulse-ring"><div class="ss-pulse-dot"></div></div>
+        <p class="ss-prompt" id="ss-prompt">TOUCHEZ L'ÉCRAN POUR COMMENCER</p>
       </div>
-    </main>
-
-    <footer class="home-footer">ICC — Borne d'accueil</footer>
+    </div>
   </div>
 
-  <!-- Écran formulaire -->
+  <div id="screen-home" class="screen">
+    <div class="home-layout">
+      <section class="home-hero">
+        <img src="../src/ElvantoKiosk/assets/LOGO-ICC.png" alt="ICC" />
+        <p class="kicker">ACCUEIL</p>
+        <h1 id="welcome-title">Bienvenue</h1>
+        <div class="divider"></div>
+        <p id="welcome-message">—</p>
+      </section>
+      <div class="forms-row" id="forms-row"></div>
+    </div>
+  </div>
+
   <div id="screen-form" class="screen">
     <div class="top-bar">
-      <span class="top-bar-title" id="form-title">Première visite</span>
+      <span class="top-bar-title" id="form-title">—</span>
     </div>
-
     <div class="form-viewport">
       <div class="form-placeholder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -595,35 +656,30 @@
           <path d="M7 8h10M7 12h10M7 16h6"/>
         </svg>
         <h2>Formulaire Notion</h2>
-        <p>
-          Le formulaire Notion s'affiche ici, entre la barre du haut et celle du bas.
-          Les boutons « Revenir à l'accueil » restent toujours visibles.
-        </p>
+        <p>Zone WebView2 — barres haut/bas toujours visibles.</p>
         <p class="form-url" id="form-url-preview"></p>
       </div>
     </div>
-
     <div class="form-bottom-bar">
       <button class="btn-home-form" type="button" id="btn-home">← Revenir à l'accueil</button>
+      <button class="btn-simulate" type="button" id="btn-simulate-submit">Simuler envoi ✓</button>
     </div>
   </div>
 
-  <!-- Overlay erreur réseau (démo) -->
-  <div class="error-demo">
-    <button type="button" id="btn-show-error">Voir l'écran d'erreur</button>
+  <div id="thankyou-overlay" class="thankyou-overlay">
+    <div class="thankyou-card">
+      <div class="check">✓</div>
+      <h2 id="thankyou-message">Merci ! Retour à l'accueil…</h2>
+      <p id="thankyou-countdown">Redirection dans 3 s…</p>
+    </div>
   </div>
 
-  <!-- Bouton admin : quitter l'application -->
-  <button type="button" class="admin-exit-btn" id="btn-admin-exit" title="Administration">
-    <span class="icon">🔒</span>
-    <span class="label">Fermer</span>
-  </button>
+  <button type="button" class="admin-exit-btn" id="btn-admin-exit" title="Administration">🔒</button>
 
-  <!-- Dialog PIN -->
-  <div id="pin-overlay" class="pin-overlay">
+  <div id="pin-overlay" class="modal-overlay">
     <div class="pin-dialog">
-      <h2>Quitter l'application</h2>
-      <p class="subtitle">Saisissez le code PIN administrateur.</p>
+      <h2>Administration</h2>
+      <p class="subtitle">Saisissez le code PIN pour accéder au panneau administrateur.</p>
       <div class="pin-display" id="pin-display">—</div>
       <p class="pin-error" id="pin-error">Code PIN incorrect.</p>
       <div class="pin-grid">
@@ -647,77 +703,262 @@
     </div>
   </div>
 
+  <div id="admin-overlay" class="modal-overlay">
+    <div class="admin-panel">
+      <h2>Panneau administrateur</h2>
+      <p class="version">Elvanto Kiosk v1.0.0 — aperçu HTML</p>
+
+      <div class="admin-tabs">
+        <button type="button" class="admin-tab-btn active" data-tab="system">Système</button>
+        <button type="button" class="admin-tab-btn" data-tab="logs">Journal</button>
+        <button type="button" class="admin-tab-btn" data-tab="config">Configuration</button>
+      </div>
+
+      <div id="tab-system" class="admin-tab active">
+        <p class="desc">Test de connexion, rechargement de la config et sortie de l'application.</p>
+        <p id="connection-status" class="desc">Cliquez sur « Tester la connexion ».</p>
+        <div class="admin-actions">
+          <button class="btn-primary" type="button" id="btn-test-connection">Tester la connexion</button>
+          <button class="btn-primary btn-secondary" type="button" id="btn-reload-config">Recharger config</button>
+          <button class="btn-primary btn-danger" type="button" id="btn-quit-app">Quitter l'app</button>
+        </div>
+      </div>
+
+      <div id="tab-logs" class="admin-tab">
+        <p class="desc">Dernières lignes du journal (simulation).</p>
+        <div class="log-box" id="log-box"></div>
+        <div class="admin-actions">
+          <button class="btn-primary btn-secondary" type="button" id="btn-refresh-logs">Actualiser</button>
+        </div>
+      </div>
+
+      <div id="tab-config" class="admin-tab">
+        <p class="desc">Modifiez les paramètres principaux — chaque champ est expliqué comme dans l'app Windows.</p>
+        <div id="config-fields"></div>
+        <div class="admin-actions">
+          <button class="btn-primary" type="button" id="btn-save-config">Enregistrer (aperçu)</button>
+        </div>
+        <p id="save-status" class="desc" style="margin-top:12px;"></p>
+      </div>
+
+      <div class="admin-actions" style="justify-content:flex-end;">
+        <button class="btn-primary btn-secondary" type="button" id="btn-close-admin">Fermer</button>
+      </div>
+    </div>
+  </div>
+
   <div id="error-overlay" class="error-overlay">
     <div class="icon">⚠</div>
     <h2>Connexion indisponible</h2>
-    <p>
-      Le formulaire n'a pas pu être chargé. Vérifiez la connexion Internet.
-      Une nouvelle tentative sera effectuée automatiquement.
-    </p>
-    <div class="error-actions">
+    <p>Le formulaire n'a pas pu être chargé. Vérifiez la connexion Internet.</p>
+    <div class="admin-actions" style="justify-content:center;">
       <button class="btn-primary" type="button" id="btn-retry">Réessayer</button>
-      <button class="btn-primary btn-secondary" type="button" id="btn-error-home">Retour à l'accueil</button>
+      <button class="btn-primary btn-secondary" type="button" id="btn-error-home">Retour accueil</button>
     </div>
   </div>
 
   <script>
+    // Miroir de config.json (aperçu local)
+    let CONFIG = {
+      OrganizationName: "ICC",
+      WelcomeTitle: "Bienvenue",
+      WelcomeMessage: "Remplissez le formulaire de votre choix pour prendre rendez-vous.",
+      AdminPin: "2468",
+      ReturnDelayAfterSubmitSeconds: 3,
+      ThankYouMessage: "Merci ! Retour à l'accueil…",
+      ScreensaverSubtitle: "KIOSQUE DE PRISE DE RENDEZ-VOUS",
+      ScreensaverPrompt: "TOUCHEZ L'ÉCRAN POUR COMMENCER",
+      ReturnToScreensaverOnHome: true,
+      FormCardAccentColors: ["#DC2626", "#CA8A04", "#2563EB", "#7C3AED"],
+      Forms: [
+        { Title: "Première visite", Description: "Inscrivez-vous si c'est votre première venue.", Url: "https://jolly-drill-522.notion.site/f20ee63673094bc5a335a5c8c7b218b4?pvs=105", IconPath: "", AccentColor: "#DC2626" },
+        { Title: "Enregistrement enfants", Description: "Enregistrez vos enfants pour l'accueil.", Url: "https://jolly-drill-522.notion.site/3e722e0ed85282788a3a01f97eb85565?pvs=105", IconPath: "", AccentColor: "#CA8A04" },
+        { Title: "Demande de prière", Description: "Partagez un sujet de prière.", Url: "https://jolly-drill-522.notion.site/92422e0ed8528309936a81495aaa1cc7?pvs=105", IconPath: "", AccentColor: "#2563EB" },
+        { Title: "Formulaire 4", Description: "Partagez un sujet de prière.", Url: "https://jolly-drill-522.notion.site/5f722e0ed8528384aa7701981b69d97e?pvs=105", IconPath: "", AccentColor: "#7C3AED" }
+      ]
+    };
+
+    const screenSaver = document.getElementById('screen-screensaver');
     const screenHome = document.getElementById('screen-home');
     const screenForm = document.getElementById('screen-form');
-    const formTitle = document.getElementById('form-title');
-    const formUrlPreview = document.getElementById('form-url-preview');
+    const thankyouOverlay = document.getElementById('thankyou-overlay');
     const errorOverlay = document.getElementById('error-overlay');
+    let thankyouTimer = null;
+
+    function hideAllScreens() {
+      [screenSaver, screenHome, screenForm].forEach(s => s.classList.remove('active'));
+    }
+
+    function showScreensaver() {
+      hideAllScreens();
+      screenSaver.classList.add('active');
+      errorOverlay.classList.remove('visible');
+    }
 
     function showHome() {
+      hideAllScreens();
       screenHome.classList.add('active');
-      screenForm.classList.remove('active');
       errorOverlay.classList.remove('visible');
     }
 
     function showForm(title, url) {
-      formTitle.textContent = title;
-      formUrlPreview.textContent = url || '';
-      screenHome.classList.remove('active');
+      document.getElementById('form-title').textContent = title;
+      document.getElementById('form-url-preview').textContent = url || '';
+      hideAllScreens();
       screenForm.classList.add('active');
     }
 
-    document.querySelectorAll('.form-card').forEach(card => {
-      card.addEventListener('click', () => showForm(card.dataset.title, card.dataset.url));
+    function applyConfig() {
+      document.getElementById('ss-org').textContent = CONFIG.OrganizationName;
+      document.getElementById('ss-subtitle').textContent = CONFIG.ScreensaverSubtitle;
+      document.getElementById('ss-prompt').textContent = CONFIG.ScreensaverPrompt;
+      document.getElementById('welcome-title').textContent = CONFIG.WelcomeTitle;
+      document.getElementById('welcome-message').textContent = CONFIG.WelcomeMessage;
+      document.getElementById('thankyou-message').textContent = CONFIG.ThankYouMessage;
+      renderForms();
+      renderConfigFields();
+    }
+
+    function getAccent(form, index) {
+      if (form.AccentColor) return form.AccentColor;
+      return CONFIG.FormCardAccentColors[index % CONFIG.FormCardAccentColors.length] || '#2563EB';
+    }
+
+    function renderForms() {
+      const row = document.getElementById('forms-row');
+      row.innerHTML = '';
+      CONFIG.Forms.forEach((form, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'form-card';
+        btn.style.setProperty('--card-accent', getAccent(form, i));
+        btn.dataset.title = form.Title;
+        btn.dataset.url = form.Url;
+
+        const initial = (form.Title || '?').trim().charAt(0).toUpperCase();
+        const iconHtml = form.IconPath
+          ? `<img src="../src/ElvantoKiosk/${form.IconPath}" alt="" onerror="this.parentElement.textContent='${initial}'">`
+          : initial;
+
+        btn.innerHTML = `
+          <span class="card-icon">${iconHtml}</span>
+          <div class="card-body">
+            <h3>${form.Title}</h3>
+            <p>${form.Description || ''}</p>
+          </div>
+          <span class="card-arrow">→</span>`;
+
+        btn.addEventListener('click', () => {
+          btn.classList.add('pressed');
+          setTimeout(() => btn.classList.remove('pressed'), 180);
+          showForm(form.Title, form.Url);
+        });
+        row.appendChild(btn);
+      });
+    }
+
+    function showThankYou() {
+      const delay = CONFIG.ReturnDelayAfterSubmitSeconds || 3;
+      let left = delay;
+      document.getElementById('thankyou-countdown').textContent = `Redirection dans ${left} s…`;
+      thankyouOverlay.classList.add('visible');
+      clearInterval(thankyouTimer);
+      thankyouTimer = setInterval(() => {
+        left--;
+        document.getElementById('thankyou-countdown').textContent =
+          left <= 0 ? 'Redirection imminente…' : `Redirection dans ${left} s…`;
+        if (left <= 0) {
+          clearInterval(thankyouTimer);
+          thankyouOverlay.classList.remove('visible');
+          CONFIG.ReturnToScreensaverOnHome ? showScreensaver() : showHome();
+        }
+      }, 1000);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      document.getElementById('clock-hours').textContent = pad(now.getHours());
+      document.getElementById('clock-minutes').textContent = pad(now.getMinutes());
+      document.getElementById('clock-seconds').textContent = pad(now.getSeconds());
+      document.getElementById('clock-date').textContent =
+        now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+    }
+
+    const CONFIG_FIELDS = [
+      { key: 'WelcomeTitle', label: 'WelcomeTitle', help: 'Titre principal sur la page des liens.' },
+      { key: 'WelcomeMessage', label: 'WelcomeMessage', help: 'Message de présentation sous le titre.', textarea: true },
+      { key: 'ThankYouMessage', label: 'ThankYouMessage', help: 'Message affiché après envoi du formulaire.', textarea: true },
+      { key: 'ScreensaverSubtitle', label: 'ScreensaverSubtitle', help: 'Sous-titre sur l\'écran de veille.' },
+      { key: 'ScreensaverPrompt', label: 'ScreensaverPrompt', help: 'Texte d\'invitation tactile sur la veille.' },
+      { key: 'ReturnDelayAfterSubmitSeconds', label: 'ReturnDelayAfterSubmitSeconds', help: 'Secondes avant retour après soumission.' },
+      { key: 'AdminPin', label: 'AdminPin', help: 'Code PIN administrateur (aperçu : 2468).' }
+    ];
+
+    function renderConfigFields() {
+      const container = document.getElementById('config-fields');
+      container.innerHTML = '';
+      CONFIG_FIELDS.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'admin-field';
+        const val = CONFIG[f.key] ?? '';
+        div.innerHTML = `
+          <label>${f.label}</label>
+          <div class="help">${f.help}</div>
+          ${f.textarea
+            ? `<textarea data-key="${f.key}">${val}</textarea>`
+            : `<input type="text" data-key="${f.key}" value="${val}">`}`;
+        container.appendChild(div);
+      });
+    }
+
+    function readConfigFields() {
+      document.querySelectorAll('#config-fields [data-key]').forEach(el => {
+        const key = el.dataset.key;
+        CONFIG[key] = el.tagName === 'TEXTAREA' ? el.value : el.value;
+        if (key === 'ReturnDelayAfterSubmitSeconds') CONFIG[key] = parseInt(CONFIG[key], 10) || 3;
+      });
+    }
+
+    // Horloge
+    updateClock();
+    setInterval(updateClock, 1000);
+    applyConfig();
+
+    screenSaver.addEventListener('click', e => {
+      if (e.target.closest('.preview-nav')) return;
+      showHome();
     });
 
     document.getElementById('btn-home').addEventListener('click', showHome);
-    document.getElementById('btn-show-error').addEventListener('click', () => {
-      errorOverlay.classList.add('visible');
-    });
-    document.getElementById('btn-retry').addEventListener('click', () => {
-      errorOverlay.classList.remove('visible');
-    });
+    document.getElementById('btn-simulate-submit').addEventListener('click', showThankYou);
+    document.getElementById('nav-screensaver').addEventListener('click', showScreensaver);
+    document.getElementById('nav-home').addEventListener('click', showHome);
+    document.getElementById('nav-form').addEventListener('click', () => showForm(CONFIG.Forms[0].Title, CONFIG.Forms[0].Url));
+    document.getElementById('nav-thankyou').addEventListener('click', showThankYou);
+    document.getElementById('nav-admin').addEventListener('click', () => document.getElementById('admin-overlay').classList.add('visible'));
+    document.getElementById('btn-show-error').addEventListener('click', () => errorOverlay.classList.add('visible'));
+    document.getElementById('btn-retry').addEventListener('click', () => errorOverlay.classList.remove('visible'));
     document.getElementById('btn-error-home').addEventListener('click', showHome);
 
-    // --- Dialog PIN (aperçu, PIN démo : 1234) ---
-    const DEMO_PIN = '1234';
+    // PIN
+    let enteredPin = '';
     const pinOverlay = document.getElementById('pin-overlay');
     const pinDisplay = document.getElementById('pin-display');
     const pinError = document.getElementById('pin-error');
-    let enteredPin = '';
 
     function updatePinDisplay() {
       pinDisplay.textContent = enteredPin.length === 0 ? '—' : '●'.repeat(enteredPin.length);
     }
 
-    function openPinDialog() {
+    document.getElementById('btn-admin-exit').addEventListener('click', () => {
       enteredPin = '';
       pinError.classList.remove('visible');
       updatePinDisplay();
       pinOverlay.classList.add('visible');
-    }
+    });
 
-    function closePinDialog() {
-      pinOverlay.classList.remove('visible');
-      enteredPin = '';
-    }
-
-    document.getElementById('btn-admin-exit').addEventListener('click', openPinDialog);
-    document.getElementById('pin-cancel').addEventListener('click', closePinDialog);
+    document.getElementById('pin-cancel').addEventListener('click', () => pinOverlay.classList.remove('visible'));
 
     document.querySelectorAll('.pin-key[data-digit]').forEach(key => {
       key.addEventListener('click', () => {
@@ -729,27 +970,77 @@
       });
     });
 
-    document.getElementById('pin-clear').addEventListener('click', () => {
-      enteredPin = '';
-      pinError.classList.remove('visible');
-      updatePinDisplay();
-    });
-
-    document.getElementById('pin-back').addEventListener('click', () => {
-      enteredPin = enteredPin.slice(0, -1);
-      pinError.classList.remove('visible');
-      updatePinDisplay();
-    });
+    document.getElementById('pin-clear').addEventListener('click', () => { enteredPin = ''; updatePinDisplay(); });
+    document.getElementById('pin-back').addEventListener('click', () => { enteredPin = enteredPin.slice(0, -1); updatePinDisplay(); });
 
     document.getElementById('pin-ok').addEventListener('click', () => {
-      if (enteredPin === DEMO_PIN) {
-        alert('PIN correct — l\'application se fermerait ici.');
-        closePinDialog();
+      if (enteredPin === CONFIG.AdminPin) {
+        pinOverlay.classList.remove('visible');
+        document.getElementById('admin-overlay').classList.add('visible');
+        enteredPin = '';
       } else {
         pinError.classList.add('visible');
         enteredPin = '';
         updatePinDisplay();
       }
+    });
+
+    // Admin tabs
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.getElementById('log-box').textContent =
+      `[INFO] Configuration chargée : ${CONFIG.Forms.length} formulaire(s).\n` +
+      `[INFO] WebView2 initialisé.\n` +
+      `[INFO] Hook clavier installé.\n` +
+      `(Journal simulé — voir logs/application.log sur la borne)`;
+
+    document.getElementById('btn-refresh-logs').addEventListener('click', () => {
+      document.getElementById('log-box').textContent += `\n[INFO] Journal actualisé — ${new Date().toLocaleTimeString('fr-FR')}`;
+    });
+
+    document.getElementById('btn-test-connection').addEventListener('click', async () => {
+      const status = document.getElementById('connection-status');
+      status.textContent = 'Test en cours…';
+      status.className = 'desc';
+      try {
+        const url = CONFIG.Forms[0]?.Url;
+        await fetch(url, { mode: 'no-cors' });
+        status.textContent = 'Connexion OK (aperçu — test réel sur Windows)';
+        status.className = 'desc status-ok';
+      } catch {
+        status.textContent = 'Test limité en local (file://) — OK sur la borne Windows';
+        status.className = 'desc status-ok';
+      }
+    });
+
+    document.getElementById('btn-reload-config').addEventListener('click', () => {
+      readConfigFields();
+      applyConfig();
+      document.getElementById('connection-status').textContent = 'Configuration rechargée (aperçu).';
+      document.getElementById('connection-status').className = 'desc status-ok';
+    });
+
+    document.getElementById('btn-save-config').addEventListener('click', () => {
+      readConfigFields();
+      applyConfig();
+      document.getElementById('save-status').textContent = 'Paramètres appliqués à l\'aperçu (sur Windows : enregistrés dans config.json).';
+      document.getElementById('save-status').className = 'desc status-ok';
+    });
+
+    document.getElementById('btn-quit-app').addEventListener('click', () => {
+      alert('Sur la borne Windows, l\'application se fermerait ici.');
+      document.getElementById('admin-overlay').classList.remove('visible');
+    });
+
+    document.getElementById('btn-close-admin').addEventListener('click', () => {
+      document.getElementById('admin-overlay').classList.remove('visible');
     });
   </script>
 </body>

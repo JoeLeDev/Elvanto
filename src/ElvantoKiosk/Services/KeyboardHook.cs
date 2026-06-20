@@ -104,6 +104,10 @@ public sealed class KeyboardHook : IDisposable
         var altDown = (data.flags & LLKHF_ALTDOWN) != 0;
         var ctrlDown = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
 
+        // AltGr (Ctrl+Alt) sert aux caractères spéciaux (@, #, etc.) sur clavier AZERTY
+        if (altDown && ctrlDown)
+            return false;
+
         // Touche Windows / menu contextuel
         if (vk is VK_LWIN or VK_RWIN or VK_APPS)
             return true;

@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using ElvantoKiosk.Controls;
 using ElvantoKiosk.Models;
@@ -15,17 +17,22 @@ namespace ElvantoKiosk;
 
 public partial class MainWindow : Window
 {
-    private readonly AppConfig _config;
+    private AppConfig _config;
     private readonly KeyboardHook _keyboardHook = new();
     private readonly DispatcherTimer _idleTimer;
     private readonly DispatcherTimer _submitTimer;
     private readonly DispatcherTimer _submitCheckTimer;
+    private readonly DispatcherTimer _thankYouCountdownTimer;
+    private readonly List<CoreWebView2Frame> _webFrames = new();
 
     private FormEntry? _currentForm;
     private bool _inFormMode;
     private bool _submitDetected;
     private bool _allowClose;
     private bool _webViewReady;
+    private bool _onScreensaver;
+    private string? _submitDetectionScript;
+    private int _thankYouSecondsLeft;
 
     public MainWindow()
     {
@@ -36,6 +43,9 @@ public partial class MainWindow : Window
         Home.ApplyConfig(_config, App.BaseDirectory);
         Home.FormSelected += OnFormSelected;
 
+        Screensaver.ApplyConfig(_config, App.BaseDirectory);
+        Screensaver.Dismissed += (_, _) => ShowHome();
+
         if (_config.AllowedHosts.Count == 0)
             Logger.Warn("AllowedHosts est vide : la navigation n'est PAS restreinte. Ajoutez les domaines autorisés dans config.json.");
 
@@ -45,8 +55,11 @@ public partial class MainWindow : Window
         _submitTimer = new DispatcherTimer();
         _submitTimer.Tick += SubmitTimer_Tick;
 
-        _submitCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _submitCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _submitCheckTimer.Tick += SubmitCheckTimer_Tick;
+
+        _thankYouCountdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _thankYouCountdownTimer.Tick += ThankYouCountdownTimer_Tick;
 
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -58,6 +71,49 @@ public partial class MainWindow : Window
         _keyboardHook.Install();
         _idleTimer.Start();
         await InitializeWebViewAsync();
+
+        if (_config.ScreensaverEnabled)
+            ShowScreensaver();
+        else
+            ShowHome();
+    }
+
+    // ---------------------------------------------------------------------
+    //  Navigation écrans
+    // ---------------------------------------------------------------------
+
+    private void ShowScreensaver()
+    {
+        _onScreensaver = true;
+        _inFormMode = false;
+
+        FormContainer.Visibility = Visibility.Collapsed;
+        ErrorOverlay.Visibility = Visibility.Collapsed;
+        Home.Visibility = Visibility.Collapsed;
+        AdminExitButton.Visibility = Visibility.Visible;
+
+        Screensaver.Visibility = Visibility.Visible;
+        Screensaver.Start();
+        Background = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.Color.FromRgb(0x0A, 0x06, 0x18));
+    }
+
+    private void ShowHome()
+    {
+        _onScreensaver = false;
+        _inFormMode = false;
+        _submitDetected = false;
+        _submitTimer.Stop();
+        _submitCheckTimer.Stop();
+        _currentForm = null;
+
+        Screensaver.Stop();
+        Screensaver.Visibility = Visibility.Collapsed;
+        FormContainer.Visibility = Visibility.Collapsed;
+        ErrorOverlay.Visibility = Visibility.Collapsed;
+        AdminExitButton.Visibility = Visibility.Visible;
+        Home.Visibility = Visibility.Visible;
+        Background = new SolidColorBrush(Color.FromRgb(0xF8, 0xFA, 0xFC));
     }
 
     // ---------------------------------------------------------------------
@@ -90,6 +146,10 @@ public partial class MainWindow : Window
             Web.CoreWebView2.SourceChanged += OnSourceChanged;
             Web.CoreWebView2.ProcessFailed += OnProcessFailed;
             Web.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+            Web.CoreWebView2.FrameCreated += OnFrameCreated;
+
+            _submitDetectionScript = BuildSubmitDetectionScript();
+            await Web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(_submitDetectionScript);
 
             _webViewReady = true;
             Logger.Info("WebView2 initialisé.");
@@ -142,9 +202,23 @@ public partial class MainWindow : Window
 
         if (_inFormMode)
         {
-            _ = InjectSubmitDetectionScriptAsync();
+            _ = InjectMainFrameDetectionScriptAsync();
             _submitCheckTimer.Start();
         }
+    }
+
+    private void OnFrameCreated(object? sender, CoreWebView2FrameCreatedEventArgs e)
+    {
+        var frame = e.Frame;
+        _webFrames.Add(frame);
+        frame.Destroyed += (_, _) => _webFrames.Remove(frame);
+        frame.NavigationCompleted += async (_, args) =>
+        {
+            if (!_inFormMode || _submitDetected || !args.IsSuccess)
+                return;
+
+            await InjectSubmitDetectionScriptAsync(frame);
+        };
     }
 
     private void OnSourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)
@@ -171,23 +245,37 @@ public partial class MainWindow : Window
             TriggerSubmitReturn("page Notion (confirmation)");
     }
 
-    private async System.Threading.Tasks.Task InjectSubmitDetectionScriptAsync()
+    private string BuildSubmitDetectionScript()
     {
-        if (!_webViewReady || _config.SubmitTextKeywords.Count == 0)
-            return;
-
-        try
-        {
-            var keywordsJson = JsonSerializer.Serialize(_config.SubmitTextKeywords);
-            var script = $@"
+        var keywordsJson = JsonSerializer.Serialize(_config.SubmitTextKeywords);
+        return $@"
 (function() {{
+  if (window.__elvantoSubmitDetector) return;
+  window.__elvantoSubmitDetector = true;
   const keywords = {keywordsJson};
+  function collectText(root) {{
+    const parts = [];
+    function walk(node) {{
+      if (!node) return;
+      if (node.nodeType === 3) {{
+        const t = node.textContent;
+        if (t) parts.push(t);
+        return;
+      }}
+      if (node.nodeType !== 1) return;
+      if (node.shadowRoot) walk(node.shadowRoot);
+      for (let i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+    }}
+    walk(root);
+    return parts.join(' ');
+  }}
   function matches(text) {{
     const lower = (text || '').toLowerCase();
     return keywords.some(k => k && lower.includes(String(k).toLowerCase()));
   }}
   function notifyIfSubmitted() {{
-    const text = document.body ? document.body.innerText : '';
+    const root = document.body || document.documentElement;
+    const text = collectText(root);
     if (matches(text)) {{
       window.chrome.webview.postMessage('submitDetected');
       return true;
@@ -195,12 +283,13 @@ public partial class MainWindow : Window
     return false;
   }}
   function start() {{
-    if (!document.body) return;
+    const root = document.body || document.documentElement;
+    if (!root) return;
     if (notifyIfSubmitted()) return;
     const observer = new MutationObserver(() => {{
       if (notifyIfSubmitted()) observer.disconnect();
     }});
-    observer.observe(document.body, {{ childList: true, subtree: true, characterData: true }});
+    observer.observe(root, {{ childList: true, subtree: true, characterData: true }});
   }}
   if (document.readyState === 'loading') {{
     document.addEventListener('DOMContentLoaded', start);
@@ -208,8 +297,49 @@ public partial class MainWindow : Window
     start();
   }}
 }})();";
+    }
 
-            await Web.CoreWebView2.ExecuteScriptAsync(script);
+    private const string ReadPageTextScript = @"
+(function() {
+  const parts = [];
+  function walk(node) {
+    if (!node) return;
+    if (node.nodeType === 3) {
+      const t = node.textContent;
+      if (t) parts.push(t);
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    if (node.shadowRoot) walk(node.shadowRoot);
+    for (let i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+  }
+  walk(document.body || document.documentElement);
+  return parts.join(' ');
+})();";
+
+    private async System.Threading.Tasks.Task InjectMainFrameDetectionScriptAsync()
+    {
+        if (!_webViewReady || string.IsNullOrEmpty(_submitDetectionScript))
+            return;
+
+        try
+        {
+            await Web.CoreWebView2.ExecuteScriptAsync(_submitDetectionScript);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Injection du script de détection Notion (frame principale) impossible.", ex);
+        }
+    }
+
+    private async System.Threading.Tasks.Task InjectSubmitDetectionScriptAsync(CoreWebView2Frame frame)
+    {
+        if (!_webViewReady || string.IsNullOrEmpty(_submitDetectionScript))
+            return;
+
+        try
+        {
+            await frame.ExecuteScriptAsync(_submitDetectionScript);
         }
         catch (Exception ex)
         {
@@ -224,17 +354,33 @@ public partial class MainWindow : Window
 
         try
         {
-            var raw = await Web.CoreWebView2.ExecuteScriptAsync(
-                "document.body ? document.body.innerText : ''");
-
-            var pageText = JsonSerializer.Deserialize<string>(raw) ?? string.Empty;
-            if (ContainsSubmitTextKeyword(pageText))
+            if (await PageTextMatchesSubmitKeywordAsync(s => Web.CoreWebView2.ExecuteScriptAsync(s)))
+            {
                 TriggerSubmitReturn("texte de confirmation Notion");
+                return;
+            }
+
+            foreach (var frame in _webFrames)
+            {
+                if (await PageTextMatchesSubmitKeywordAsync(s => frame.ExecuteScriptAsync(s)))
+                {
+                    TriggerSubmitReturn("texte de confirmation Notion (sous-frame)");
+                    return;
+                }
+            }
         }
         catch
         {
             // Ignorer les erreurs transitoires de lecture DOM.
         }
+    }
+
+    private async System.Threading.Tasks.Task<bool> PageTextMatchesSubmitKeywordAsync(
+        Func<string, System.Threading.Tasks.Task<string>> executeScript)
+    {
+        var raw = await executeScript(ReadPageTextScript);
+        var pageText = JsonSerializer.Deserialize<string>(raw) ?? string.Empty;
+        return ContainsSubmitTextKeyword(pageText);
     }
 
     private bool ContainsSubmitTextKeyword(string pageText)
@@ -255,8 +401,56 @@ public partial class MainWindow : Window
         Logger.Info($"Soumission détectée ({source}). Retour à l'accueil dans {_config.ReturnDelayAfterSubmitSeconds}s.");
         _submitDetected = true;
         _submitCheckTimer.Stop();
-        _submitTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, _config.ReturnDelayAfterSubmitSeconds));
+
+        var delay = Math.Max(1, _config.ReturnDelayAfterSubmitSeconds);
+        ShowThankYouOverlay(delay);
+        _submitTimer.Interval = TimeSpan.FromSeconds(delay);
         _submitTimer.Start();
+    }
+
+    private void ShowThankYouOverlay(int seconds)
+    {
+        ThankYouMessageText.Text = string.IsNullOrWhiteSpace(_config.ThankYouMessage)
+            ? "Merci ! Retour à l'accueil…"
+            : _config.ThankYouMessage;
+        _thankYouSecondsLeft = seconds;
+        UpdateThankYouCountdownText();
+        ThankYouOverlay.Visibility = Visibility.Visible;
+        _thankYouCountdownTimer.Start();
+    }
+
+    private void ThankYouCountdownTimer_Tick(object? sender, EventArgs e)
+    {
+        _thankYouSecondsLeft--;
+        if (_thankYouSecondsLeft <= 0)
+        {
+            _thankYouCountdownTimer.Stop();
+            return;
+        }
+
+        UpdateThankYouCountdownText();
+    }
+
+    private void UpdateThankYouCountdownText()
+    {
+        ThankYouCountdownText.Text = _thankYouSecondsLeft <= 1
+            ? "Redirection imminente…"
+            : $"Redirection dans {_thankYouSecondsLeft} s…";
+    }
+
+    private void HideThankYouOverlay()
+    {
+        _thankYouCountdownTimer.Stop();
+        ThankYouOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    public void ReloadConfiguration()
+    {
+        _config = ConfigService.Load(App.BaseDirectory);
+        _submitDetectionScript = BuildSubmitDetectionScript();
+        Home.ApplyConfig(_config, App.BaseDirectory);
+        Screensaver.ApplyConfig(_config, App.BaseDirectory);
+        Logger.Info("Configuration rechargée à chaud.");
     }
 
     private void OnNewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
@@ -320,10 +514,16 @@ public partial class MainWindow : Window
         }
 
         _currentForm = form;
+        _onScreensaver = false;
         _inFormMode = true;
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
+        _webFrames.Clear();
+
+        Screensaver.Stop();
+        Screensaver.Visibility = Visibility.Collapsed;
+        Home.Visibility = Visibility.Collapsed;
 
         FormTitleText.Text = form.Title;
         Home.Visibility = Visibility.Collapsed;
@@ -339,13 +539,17 @@ public partial class MainWindow : Window
         Web.CoreWebView2.Navigate(form.Url);
     }
 
-    private async void ReturnHome(string reason)
+    private async void ReturnHome(string reason, bool toScreensaver = false)
     {
-        if (!_inFormMode)
+        if (!_inFormMode && !_onScreensaver && Home.Visibility != Visibility.Visible)
+            return;
+
+        if (_onScreensaver)
             return;
 
         Logger.Info($"Retour à l'accueil ({reason}).");
 
+        HideThankYouOverlay();
         _inFormMode = false;
         _submitDetected = false;
         _submitTimer.Stop();
@@ -353,10 +557,8 @@ public partial class MainWindow : Window
         _currentForm = null;
 
         FormContainer.Visibility = Visibility.Collapsed;
-        AdminExitButton.Visibility = Visibility.Visible;
         ErrorOverlay.Visibility = Visibility.Collapsed;
         HideLoading();
-        Home.Visibility = Visibility.Visible;
 
         if (_webViewReady)
         {
@@ -377,6 +579,11 @@ public partial class MainWindow : Window
                 Logger.Error("Erreur lors de la réinitialisation des données de session.", ex);
             }
         }
+
+        if (toScreensaver && _config.ScreensaverEnabled)
+            ShowScreensaver();
+        else
+            ShowHome();
     }
 
     // ---------------------------------------------------------------------
@@ -385,18 +592,30 @@ public partial class MainWindow : Window
 
     private void IdleTimer_Tick(object? sender, EventArgs e)
     {
-        if (!_inFormMode)
+        if (_onScreensaver)
             return;
 
         var idle = IdleTimeService.GetIdleTime().TotalSeconds;
-        if (idle >= _config.InactivityTimeoutSeconds)
-            ReturnHome($"inactivité {(int)idle}s");
+
+        if (_inFormMode && idle >= _config.InactivityTimeoutSeconds)
+        {
+            ReturnHome($"inactivité {(int)idle}s", _config.ReturnToScreensaverOnHome);
+            return;
+        }
+
+        if (!_inFormMode && _config.ScreensaverEnabled && _config.ReturnToScreensaverOnIdle
+            && Home.Visibility == Visibility.Visible
+            && idle >= _config.ScreensaverIdleTimeoutSeconds)
+        {
+            ShowScreensaver();
+        }
     }
 
     private void SubmitTimer_Tick(object? sender, EventArgs e)
     {
         _submitTimer.Stop();
-        ReturnHome("formulaire soumis");
+        HideThankYouOverlay();
+        ReturnHome("formulaire soumis", _config.ReturnToScreensaverOnHome);
     }
 
     // ---------------------------------------------------------------------
@@ -450,7 +669,7 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        // Raccourci administrateur : Ctrl+Maj+Q
+        // Raccourci administrateur : Ctrl+Maj+Q (toujours actif)
         if (e.Key == Key.Q &&
             (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
             (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
@@ -460,6 +679,20 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Rechargement config à chaud : Ctrl+Maj+R
+        if (e.Key == Key.R &&
+            (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+            (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+        {
+            e.Handled = true;
+            ReloadConfiguration();
+            return;
+        }
+
+        // En mode formulaire : laisser WebView2 gérer le clavier (AltGr + 0 pour « @ », etc.)
+        if (_inFormMode)
+            return;
+
         // Alt+F4
         if (e.Key == Key.System && e.SystemKey == Key.F4)
         {
@@ -467,7 +700,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        // F5 / Ctrl+R (rechargement), F11, Ctrl+L/W/N/T/P/J/O/S, Backspace de navigation
+        // F5 / Ctrl+R (rechargement), F11, Ctrl+L/W/N/T/P/J/O/S
         var ctrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
         if (e.Key is Key.F5 or Key.F11 or Key.F12 or Key.BrowserBack or Key.BrowserForward or Key.BrowserRefresh)
         {
@@ -476,25 +709,30 @@ public partial class MainWindow : Window
         }
 
         if (ctrl && e.Key is Key.R or Key.L or Key.W or Key.N or Key.T or Key.P or Key.J or Key.O or Key.S or Key.H)
-        {
             e.Handled = true;
-        }
     }
 
     private void TryAdminExit()
     {
         var dialog = new PinDialog(_config.AdminPin) { Owner = this };
-        var result = dialog.ShowDialog();
+        if (dialog.ShowDialog() != true)
+        {
+            Logger.Warn("Tentative d'accès administrateur annulée ou PIN incorrect.");
+            return;
+        }
 
-        if (result == true)
+        var admin = new AdminPanelWindow(_config, App.BaseDirectory) { Owner = this };
+        if (admin.ShowDialog() != true)
+            return;
+
+        if (admin.ConfigSaved || admin.ConfigReloadRequested)
+            ReloadConfiguration();
+
+        if (admin.RequestQuit)
         {
             Logger.Info("Sortie du mode kiosque autorisée par l'administrateur.");
             _allowClose = true;
             Close();
-        }
-        else
-        {
-            Logger.Warn("Tentative de sortie administrateur annulée ou PIN incorrect.");
         }
     }
 
@@ -510,6 +748,7 @@ public partial class MainWindow : Window
         _idleTimer.Stop();
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
+        _thankYouCountdownTimer.Stop();
         _keyboardHook.Dispose();
         Web?.Dispose();
     }

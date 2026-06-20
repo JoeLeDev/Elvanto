@@ -40,6 +40,30 @@ public static class Logger
         Write("ERROR", full);
     }
 
+    public static string GetLogFilePath() => _logFile;
+
+    public static string ReadRecentLines(int maxLines = 200)
+    {
+        if (string.IsNullOrEmpty(_logFile) || !File.Exists(_logFile))
+            return "Aucun journal disponible.";
+
+        lock (Sync)
+        {
+            try
+            {
+                var lines = File.ReadAllLines(_logFile, Encoding.UTF8);
+                if (lines.Length <= maxLines)
+                    return string.Join(Environment.NewLine, lines);
+
+                return string.Join(Environment.NewLine, lines[^maxLines..]);
+            }
+            catch (Exception ex)
+            {
+                return $"Impossible de lire le journal : {ex.Message}";
+            }
+        }
+    }
+
     private static void Write(string level, string message)
     {
         if (string.IsNullOrEmpty(_logFile))

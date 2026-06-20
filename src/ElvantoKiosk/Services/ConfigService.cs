@@ -5,7 +5,7 @@ using ElvantoKiosk.Models;
 
 namespace ElvantoKiosk.Services;
 
-/// <summary>Chargement / création du fichier de configuration config.json.</summary>
+/// <summary>Chargement / sauvegarde du fichier de configuration config.json.</summary>
 public static class ConfigService
 {
     private static readonly JsonSerializerOptions Options = new()
@@ -19,10 +19,6 @@ public static class ConfigService
     public static string ConfigPath(string baseDirectory) =>
         Path.Combine(baseDirectory, "config.json");
 
-    /// <summary>
-    /// Charge la configuration. En cas d'absence ou d'erreur de parsing,
-    /// renvoie une configuration par défaut (et journalise le problème).
-    /// </summary>
     public static AppConfig Load(string baseDirectory)
     {
         var path = ConfigPath(baseDirectory);
@@ -33,7 +29,7 @@ public static class ConfigService
             {
                 Logger.Warn($"config.json introuvable ({path}). Création d'une configuration par défaut.");
                 var defaults = CreateDefault();
-                TrySave(path, defaults);
+                TrySave(baseDirectory, defaults);
                 return defaults;
             }
 
@@ -46,6 +42,7 @@ public static class ConfigService
                 return CreateDefault();
             }
 
+            EnsureDefaults(config);
             Logger.Info($"Configuration chargée : {config.Forms.Count} formulaire(s).");
             return config;
         }
@@ -56,30 +53,66 @@ public static class ConfigService
         }
     }
 
-    private static void TrySave(string path, AppConfig config)
+    public static (bool Success, string Message) Save(string baseDirectory, AppConfig config)
     {
         try
         {
-            File.WriteAllText(path, JsonSerializer.Serialize(config, Options));
+            EnsureDefaults(config);
+            var path = ConfigPath(baseDirectory);
+            var json = JsonSerializer.Serialize(config, Options);
+            File.WriteAllText(path, json);
+            Logger.Info("Configuration enregistrée depuis le panneau admin.");
+            return (true, "Configuration enregistrée.");
         }
         catch (Exception ex)
         {
-            Logger.Error("Impossible d'écrire config.json par défaut.", ex);
+            Logger.Error("Impossible d'enregistrer config.json.", ex);
+            return (false, $"Erreur : {ex.Message}");
         }
+    }
+
+    private static void EnsureDefaults(AppConfig config)
+    {
+        if (config.FormCardAccentColors.Count == 0)
+        {
+            config.FormCardAccentColors =
+            [
+                "#DC2626",
+                "#CA8A04",
+                "#2563EB",
+                "#7C3AED"
+            ];
+        }
+    }
+
+    private static void TrySave(string baseDirectory, AppConfig config)
+    {
+        Save(baseDirectory, config);
     }
 
     private static AppConfig CreateDefault()
     {
         return new AppConfig
         {
+            ThankYouMessage = "Merci ! Retour à l'accueil…",
+            ScreensaverEnabled = true,
+            ScreensaverSubtitle = "KIOSQUE DE PRISE DE RENDEZ-VOUS",
+            ScreensaverPrompt = "TOUCHEZ L'ÉCRAN POUR COMMENCER",
+            FormCardAccentColors =
+            [
+                "#DC2626",
+                "#CA8A04",
+                "#2563EB",
+                "#7C3AED"
+            ],
             AllowedHosts = { "notion.so", "notion.site", "notion.com" },
             SubmitUrlKeywords = { "thank", "success", "complete", "submitted", "confirmation" },
             SubmitTextKeywords =
             {
-                "submission has been received",
-                "votre réponse a été enregistrée",
-                "formulaire envoyé",
-                "merci pour votre envoi"
+                "nous avons bien reçu votre réponse",
+                "nous avons bien reçu",
+                "envoyer une copie",
+                "FORMULAIRE_ENVOYÉ"
             },
             Forms =
             {
@@ -87,7 +120,7 @@ public static class ConfigService
                 {
                     Title = "Formulaire d'accueil",
                     Description = "Configurez l'URL dans config.json",
-                    Url = "https://VOTRE-SOUS-DOMAINE.elvanto.eu/form/IDENTIFIANT"
+                    Url = "https://notion.so"
                 }
             }
         };

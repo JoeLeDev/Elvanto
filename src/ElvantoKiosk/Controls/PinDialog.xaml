@@ -16,11 +16,11 @@
             <DropShadowEffect BlurRadius="30" ShadowDepth="0" Opacity="0.5" Color="#000000" />
         </Border.Effect>
         <StackPanel>
-            <TextBlock Text="Quitter l'application"
+            <TextBlock Text="Administration"
                        Foreground="{StaticResource TextBrush}"
                        FontSize="24" FontWeight="Bold"
                        HorizontalAlignment="Center" />
-            <TextBlock Text="Saisissez le code PIN administrateur."
+            <TextBlock Text="Saisissez le code PIN pour accéder au panneau administrateur."
                        Foreground="{StaticResource MutedTextBrush}"
                        FontSize="15" Margin="0,8,0,20" TextWrapping="Wrap"
                        HorizontalAlignment="Center" TextAlignment="Center" />
