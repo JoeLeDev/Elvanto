@@ -224,9 +224,9 @@ public partial class AdminPanelWindow : Window
 
                 ApplyConfigField(key, box.Text);
             }
-            else if (child is CheckBox { Tag: string key } check)
+            else if (child is CheckBox { Tag: string checkKey } check)
             {
-                ApplyConfigBoolField(key, check.IsChecked == true);
+                ApplyConfigBoolField(checkKey, check.IsChecked == true);
             }
         }
     }

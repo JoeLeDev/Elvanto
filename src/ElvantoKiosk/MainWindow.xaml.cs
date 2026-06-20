@@ -603,7 +603,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!_inFormMode && _config.ScreensaverEnabled && _config.ReturnToScreensaverOnIdle
+        if (!_inFormMode && _config.ScreensaverEnabled
             && Home.Visibility == Visibility.Visible
             && idle >= _config.ScreensaverIdleTimeoutSeconds)
         {
