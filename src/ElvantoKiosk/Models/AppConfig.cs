@@ -31,6 +31,12 @@ public class AppConfig
     /// <summary>Efface cookies / données de session au retour à l'accueil (confidentialité entre visiteurs).</summary>
     public bool ClearDataOnReturnHome { get; set; } = true;
 
+    /// <summary>
+    /// Clavier virtuel en mode formulaire : « Osk » (clavier visuel Windows, recommandé)
+    /// ou « TabTip » (clavier tactile tablette — le « @ » peut ne pas fonctionner dans WebView2).
+    /// </summary>
+    public string VirtualKeyboardMode { get; set; } = VirtualKeyboardService.ModeOsk;
+
     /// <summary>Affiche un écran de veille (horloge + logo) au démarrage et après inactivité.</summary>
     public bool ScreensaverEnabled { get; set; } = true;
 

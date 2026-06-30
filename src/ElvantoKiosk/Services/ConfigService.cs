@@ -73,6 +73,9 @@ public static class ConfigService
 
     private static void EnsureDefaults(AppConfig config)
     {
+        if (string.IsNullOrWhiteSpace(config.VirtualKeyboardMode))
+            config.VirtualKeyboardMode = VirtualKeyboardService.ModeOsk;
+
         if (config.FormCardAccentColors.Count == 0)
         {
             config.FormCardAccentColors =

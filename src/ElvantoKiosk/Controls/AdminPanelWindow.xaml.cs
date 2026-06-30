@@ -52,6 +52,7 @@ public partial class AdminPanelWindow : Window
         AddField("ThankYouMessage", "Message affiché au visiteur après envoi du formulaire.", Config.ThankYouMessage);
         AddCheckField("ShowHomeButton", "Affiche le bouton « Revenir à l'accueil » sur les formulaires.", Config.ShowHomeButton);
         AddCheckField("ClearDataOnReturnHome", "Efface cookies/session entre chaque visiteur.", Config.ClearDataOnReturnHome);
+        AddField("VirtualKeyboardMode", "Clavier en formulaire : Osk (recommandé, @ OK) ou TabTip (tablette).", Config.VirtualKeyboardMode);
 
         AddSection("Écran de veille");
         AddCheckField("ScreensaverEnabled", "Active l'écran de veille au démarrage et après inactivité.", Config.ScreensaverEnabled);

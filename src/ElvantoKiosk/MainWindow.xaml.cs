@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -18,14 +17,9 @@ namespace ElvantoKiosk;
 
 public partial class MainWindow : Window
 {
-    private static readonly string[] TouchKeyboardExecutableCandidates =
-    {
-        @"C:\Program Files\Common Files\microsoft shared\ink\TabTip.exe",
-        @"C:\Program Files\Tablet PC\TabTip.exe"
-    };
-
     private AppConfig _config;
     private readonly KeyboardHook _keyboardHook = new();
+    private readonly VirtualKeyboardService _virtualKeyboard = new();
     private readonly DispatcherTimer _idleTimer;
     private readonly DispatcherTimer _submitTimer;
     private readonly DispatcherTimer _submitCheckTimer;
@@ -46,6 +40,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _config = ConfigService.Load(App.BaseDirectory);
+        _virtualKeyboard.ApplyConfig(_config.VirtualKeyboardMode);
 
         Home.ApplyConfig(_config, App.BaseDirectory);
         Home.FormSelected += OnFormSelected;
@@ -94,6 +89,7 @@ public partial class MainWindow : Window
         _onScreensaver = true;
         _inFormMode = false;
         _keyboardHook.SetFormInputActive(false);
+        _virtualKeyboard.OnFormClosed();
 
         FormContainer.Visibility = Visibility.Collapsed;
         ErrorOverlay.Visibility = Visibility.Collapsed;
@@ -111,6 +107,7 @@ public partial class MainWindow : Window
         _onScreensaver = false;
         _inFormMode = false;
         _keyboardHook.SetFormInputActive(false);
+        _virtualKeyboard.OnFormClosed();
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
@@ -159,12 +156,18 @@ public partial class MainWindow : Window
             Web.PreviewTouchDown += (_, _) =>
             {
                 if (_inFormMode)
-                    EnsureTouchKeyboardVisible();
+                {
+                    _virtualKeyboard.SuppressTabletKeyboard();
+                    _virtualKeyboard.EnsureVisible();
+                }
             };
             Web.PreviewMouseDown += (_, _) =>
             {
                 if (_inFormMode)
-                    EnsureTouchKeyboardVisible();
+                {
+                    _virtualKeyboard.SuppressTabletKeyboard();
+                    _virtualKeyboard.EnsureVisible();
+                }
             };
 
             _submitDetectionScript = BuildSubmitDetectionScript();
@@ -236,27 +239,8 @@ public partial class MainWindow : Window
         {
             Web.Focus();
             Keyboard.Focus(Web);
-            EnsureTouchKeyboardVisible();
+            _virtualKeyboard.EnsureVisible();
         }, DispatcherPriority.Input);
-    }
-
-    private void EnsureTouchKeyboardVisible()
-    {
-        try
-        {
-            if (Process.GetProcessesByName("TabTip").Length > 0)
-                return;
-
-            var path = TouchKeyboardExecutableCandidates.FirstOrDefault(File.Exists);
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Warn($"Impossible d'ouvrir le clavier tactile Windows: {ex.Message}");
-        }
     }
 
     private void OnFrameCreated(object? sender, CoreWebView2FrameCreatedEventArgs e)
@@ -500,6 +484,7 @@ public partial class MainWindow : Window
     {
         _config = ConfigService.Load(App.BaseDirectory);
         _submitDetectionScript = BuildSubmitDetectionScript();
+        _virtualKeyboard.ApplyConfig(_config.VirtualKeyboardMode);
         Home.ApplyConfig(_config, App.BaseDirectory);
         Screensaver.ApplyConfig(_config, App.BaseDirectory);
         Logger.Info("Configuration rechargée à chaud.");
@@ -569,6 +554,7 @@ public partial class MainWindow : Window
         _onScreensaver = false;
         _inFormMode = true;
         _keyboardHook.SetFormInputActive(true);
+        _virtualKeyboard.EnsureVisible();
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
@@ -605,6 +591,7 @@ public partial class MainWindow : Window
         HideThankYouOverlay();
         _inFormMode = false;
         _keyboardHook.SetFormInputActive(false);
+        _virtualKeyboard.OnFormClosed();
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();

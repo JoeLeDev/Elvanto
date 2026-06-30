@@ -9,6 +9,7 @@
   "ThankYouMessage": "Merci ! Retour à l'accueil…",
   "ShowHomeButton": true,
   "ClearDataOnReturnHome": true,
+  "VirtualKeyboardMode": "Osk",
   "ScreensaverEnabled": true,
   "ScreensaverSubtitle": "KIOSQUE DE PRISE DE RENDEZ-VOUS",
   "ScreensaverPrompt": "TOUCHEZ L'ÉCRAN POUR COMMENCER",
