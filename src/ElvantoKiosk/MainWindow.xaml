@@ -37,7 +37,7 @@
 
             <!-- Zone Notion (WebView2 uniquement ici — ne couvre pas les barres) -->
             <Grid Grid.Row="1" Background="#FFFFFF">
-                <wv2:WebView2 x:Name="Web" />
+                <wv2:WebView2 x:Name="Web" Focusable="True" />
                 <Border x:Name="FormLoadingPlaceholder" Background="#0B1120" Visibility="Collapsed">
                     <TextBlock Text="Chargement…" Foreground="{StaticResource TextBrush}"
                                FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center" />

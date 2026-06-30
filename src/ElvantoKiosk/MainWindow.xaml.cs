@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -17,6 +18,12 @@ namespace ElvantoKiosk;
 
 public partial class MainWindow : Window
 {
+    private static readonly string[] TouchKeyboardExecutableCandidates =
+    {
+        @"C:\Program Files\Common Files\microsoft shared\ink\TabTip.exe",
+        @"C:\Program Files\Tablet PC\TabTip.exe"
+    };
+
     private AppConfig _config;
     private readonly KeyboardHook _keyboardHook = new();
     private readonly DispatcherTimer _idleTimer;
@@ -86,6 +93,7 @@ public partial class MainWindow : Window
     {
         _onScreensaver = true;
         _inFormMode = false;
+        _keyboardHook.SetFormInputActive(false);
 
         FormContainer.Visibility = Visibility.Collapsed;
         ErrorOverlay.Visibility = Visibility.Collapsed;
@@ -102,6 +110,7 @@ public partial class MainWindow : Window
     {
         _onScreensaver = false;
         _inFormMode = false;
+        _keyboardHook.SetFormInputActive(false);
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
@@ -147,6 +156,16 @@ public partial class MainWindow : Window
             Web.CoreWebView2.ProcessFailed += OnProcessFailed;
             Web.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
             Web.CoreWebView2.FrameCreated += OnFrameCreated;
+            Web.PreviewTouchDown += (_, _) =>
+            {
+                if (_inFormMode)
+                    EnsureTouchKeyboardVisible();
+            };
+            Web.PreviewMouseDown += (_, _) =>
+            {
+                if (_inFormMode)
+                    EnsureTouchKeyboardVisible();
+            };
 
             _submitDetectionScript = BuildSubmitDetectionScript();
             await Web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(_submitDetectionScript);
@@ -202,8 +221,41 @@ public partial class MainWindow : Window
 
         if (_inFormMode)
         {
+            FocusWebViewForInput();
             _ = InjectMainFrameDetectionScriptAsync();
             _submitCheckTimer.Start();
+        }
+    }
+
+    private void FocusWebViewForInput()
+    {
+        if (!_webViewReady)
+            return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            Web.Focus();
+            Keyboard.Focus(Web);
+            EnsureTouchKeyboardVisible();
+        }, DispatcherPriority.Input);
+    }
+
+    private void EnsureTouchKeyboardVisible()
+    {
+        try
+        {
+            if (Process.GetProcessesByName("TabTip").Length > 0)
+                return;
+
+            var path = TouchKeyboardExecutableCandidates.FirstOrDefault(File.Exists);
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Impossible d'ouvrir le clavier tactile Windows: {ex.Message}");
         }
     }
 
@@ -516,6 +568,7 @@ public partial class MainWindow : Window
         _currentForm = form;
         _onScreensaver = false;
         _inFormMode = true;
+        _keyboardHook.SetFormInputActive(true);
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
@@ -551,6 +604,7 @@ public partial class MainWindow : Window
 
         HideThankYouOverlay();
         _inFormMode = false;
+        _keyboardHook.SetFormInputActive(false);
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
@@ -689,8 +743,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        // En mode formulaire : laisser WebView2 gérer le clavier (AltGr + 0 pour « @ », etc.)
-        if (_inFormMode)
+        // En mode formulaire (ou AltGr) : laisser WebView2 / clavier tactile gérer la saisie.
+        if (_inFormMode || IsAltGrPressed())
             return;
 
         // Alt+F4
@@ -711,6 +765,10 @@ public partial class MainWindow : Window
         if (ctrl && e.Key is Key.R or Key.L or Key.W or Key.N or Key.T or Key.P or Key.J or Key.O or Key.S or Key.H)
             e.Handled = true;
     }
+
+    private static bool IsAltGrPressed() =>
+        (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) ==
+        (ModifierKeys.Control | ModifierKeys.Alt);
 
     private void TryAdminExit()
     {

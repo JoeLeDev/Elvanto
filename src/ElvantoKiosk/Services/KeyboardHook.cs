@@ -62,14 +62,23 @@ public sealed class KeyboardHook : IDisposable
     private static extern short GetAsyncKeyState(int vKey);
 
     private const int VK_CONTROL = 0x11;
+    private const int VK_RMENU = 0xA5;
+    private const int VK_PACKET = 0xE7;
 
     private readonly LowLevelKeyboardProc _proc;
     private IntPtr _hookId = IntPtr.Zero;
+    private volatile bool _formInputActive;
 
     public KeyboardHook()
     {
         _proc = HookCallback;
     }
+
+    /// <summary>
+    /// En mode formulaire, laisse passer toutes les frappes (clavier tactile TabTip, AltGr, etc.).
+    /// Le hook kiosque ne bloque que hors saisie dans Notion.
+    /// </summary>
+    public void SetFormInputActive(bool active) => _formInputActive = active;
 
     public void Install()
     {
@@ -88,6 +97,9 @@ public sealed class KeyboardHook : IDisposable
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
+        if (_formInputActive)
+            return CallNextHookEx(_hookId, nCode, wParam, lParam);
+
         if (nCode >= 0 && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
         {
             var data = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
@@ -103,9 +115,14 @@ public sealed class KeyboardHook : IDisposable
         var vk = (int)data.vkCode;
         var altDown = (data.flags & LLKHF_ALTDOWN) != 0;
         var ctrlDown = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+        var rightAltDown = (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0;
 
-        // AltGr (Ctrl+Alt) sert aux caractères spéciaux (@, #, etc.) sur clavier AZERTY
-        if (altDown && ctrlDown)
+        // Clavier tactile Windows : caractères Unicode injectés (ex. « @ » depuis &123)
+        if (vk == VK_PACKET)
+            return false;
+
+        // AltGr (touche Alt droite) et Ctrl+Alt : caractères spéciaux AZERTY (@, #, etc.)
+        if (vk == VK_RMENU || rightAltDown || (altDown && ctrlDown))
             return false;
 
         // Touche Windows / menu contextuel
