@@ -15,6 +15,7 @@ public sealed class VirtualKeyboardService
 {
     public const string ModeOsk = "Osk";
     public const string ModeTabTip = "TabTip";
+    public const string ModeNone = "None";
 
     private static readonly string OskPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.System),
@@ -27,16 +28,31 @@ public sealed class VirtualKeyboardService
     };
 
     private bool _useOsk = true;
+    private bool _disabled;
     private bool _startedOsk;
 
     public void ApplyConfig(string? mode)
     {
+        if (string.IsNullOrWhiteSpace(mode) ||
+            string.Equals(mode, ModeNone, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(mode, "Off", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(mode, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            _disabled = true;
+            _useOsk = false;
+            return;
+        }
+
+        _disabled = false;
         _useOsk = !string.Equals(mode, ModeTabTip, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Ouvre le clavier configuré et ferme TabTip si on utilise OSK.</summary>
     public void EnsureVisible()
     {
+        if (_disabled)
+            return;
+
         try
         {
             if (_useOsk)
@@ -57,7 +73,7 @@ public sealed class VirtualKeyboardService
     /// <summary>Ferme TabTip s'il s'est rouvert automatiquement (mode OSK).</summary>
     public void SuppressTabletKeyboard()
     {
-        if (!_useOsk)
+        if (_disabled || !_useOsk)
             return;
 
         try

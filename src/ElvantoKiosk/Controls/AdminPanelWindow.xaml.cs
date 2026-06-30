@@ -51,8 +51,9 @@ public partial class AdminPanelWindow : Window
         AddField("ReturnDelayAfterSubmitSeconds", "Délai (secondes) après envoi avant retour à l'accueil.", Config.ReturnDelayAfterSubmitSeconds.ToString());
         AddField("ThankYouMessage", "Message affiché au visiteur après envoi du formulaire.", Config.ThankYouMessage);
         AddCheckField("ShowHomeButton", "Affiche le bouton « Revenir à l'accueil » sur les formulaires.", Config.ShowHomeButton);
+        AddCheckField("ShowEmailHelperBar", "Barre @ et domaines e-mail (contourne le bug clavier tactile).", Config.ShowEmailHelperBar);
         AddCheckField("ClearDataOnReturnHome", "Efface cookies/session entre chaque visiteur.", Config.ClearDataOnReturnHome);
-        AddField("VirtualKeyboardMode", "Clavier en formulaire : Osk (recommandé, @ OK) ou TabTip (tablette).", Config.VirtualKeyboardMode);
+        AddField("VirtualKeyboardMode", "Clavier auto en formulaire : None (désactivé), Osk ou TabTip.", Config.VirtualKeyboardMode);
 
         AddSection("Écran de veille");
         AddCheckField("ScreensaverEnabled", "Active l'écran de veille au démarrage et après inactivité.", Config.ScreensaverEnabled);
@@ -275,6 +276,7 @@ public partial class AdminPanelWindow : Window
         switch (key)
         {
             case "ShowHomeButton": Config.ShowHomeButton = value; break;
+            case "ShowEmailHelperBar": Config.ShowEmailHelperBar = value; break;
             case "ClearDataOnReturnHome": Config.ClearDataOnReturnHome = value; break;
             case "ScreensaverEnabled": Config.ScreensaverEnabled = value; break;
             case "ReturnToScreensaverOnHome": Config.ReturnToScreensaverOnHome = value; break;

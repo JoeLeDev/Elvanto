@@ -1,0 +1,248 @@
+diff --git a/src/ElvantoKiosk/App.xaml b/src/ElvantoKiosk/App.xaml
+index cc60be8..be1d284 100644
+--- a/src/ElvantoKiosk/App.xaml
++++ b/src/ElvantoKiosk/App.xaml
+@@ -247,6 +247,42 @@
+                 </Setter>
+             </Style>
+ 
++            <!-- Boutons d'aide à la saisie e-mail (barre formulaire) — tactile -->
++            <Style x:Key="EmailHelperButton" TargetType="Button">
++                <Setter Property="Cursor" Value="Hand" />
++                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
++                <Setter Property="Background" Value="#1E293B" />
++                <Setter Property="BorderBrush" Value="#334155" />
++                <Setter Property="BorderThickness" Value="1" />
++                <Setter Property="MinHeight" Value="44" />
++                <Setter Property="MinWidth" Value="44" />
++                <Setter Property="Padding" Value="14,8" />
++                <Setter Property="Margin" Value="4,0,0,0" />
++                <Setter Property="FontSize" Value="16" />
++                <Setter Property="FontWeight" Value="SemiBold" />
++                <Setter Property="Template">
++                    <Setter.Value>
++                        <ControlTemplate TargetType="Button">
++                            <Border x:Name="border" Background="{TemplateBinding Background}"
++                                    BorderBrush="{TemplateBinding BorderBrush}"
++                                    BorderThickness="{TemplateBinding BorderThickness}"
++                                    CornerRadius="10" Padding="{TemplateBinding Padding}">
++                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
++                            </Border>
++                            <ControlTemplate.Triggers>
++                                <Trigger Property="IsMouseOver" Value="True">
++                                    <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrush}" />
++                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
++                                </Trigger>
++                                <Trigger Property="IsPressed" Value="True">
++                                    <Setter TargetName="border" Property="Background" Value="{StaticResource AccentHoverBrush}" />
++                                </Trigger>
++                            </ControlTemplate.Triggers>
++                        </ControlTemplate>
++                    </Setter.Value>
++                </Setter>
++            </Style>
++
+         </ResourceDictionary>
+     </Application.Resources>
+ </Application>
+diff --git a/src/ElvantoKiosk/MainWindow.xaml b/src/ElvantoKiosk/MainWindow.xaml
+index 5c75a53..77247b3 100644
+--- a/src/ElvantoKiosk/MainWindow.xaml
++++ b/src/ElvantoKiosk/MainWindow.xaml
+@@ -26,13 +26,35 @@
+                 <RowDefinition Height="72" />
+             </Grid.RowDefinitions>
+ 
+-            <!-- Barre supérieure : titre du formulaire -->
++            <!-- Barre supérieure : titre du formulaire + aide à la saisie e-mail -->
+             <Grid x:Name="TopBar" Grid.Row="0" Background="#0B1120">
+                 <TextBlock x:Name="FormTitleText"
+                            Foreground="{StaticResource TextBrush}"
+                            FontSize="20" FontWeight="SemiBold"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Margin="24,0" TextTrimming="CharacterEllipsis" />
++
++                <!-- Boutons d'insertion (contournent le bug AltGr de WebView2 sur écran tactile).
++                     Masqués par défaut ; affichés en mode formulaire via EmailHelperBar. -->
++                <StackPanel x:Name="EmailHelperBar"
++                            Orientation="Horizontal"
++                            HorizontalAlignment="Right"
++                            VerticalAlignment="Center"
++                            Margin="0,0,16,0"
++                            Visibility="Collapsed">
++                    <Button Content="@" Style="{StaticResource EmailHelperButton}" Focusable="False"
++                            FontWeight="Bold" Click="EmailHelper_At_Click" />
++                    <Button Content="@gmail.com" Style="{StaticResource EmailHelperButton}" Focusable="False"
++                            Tag="@gmail.com" Click="EmailHelper_Domain_Click" />
++                    <Button Content="@hotmail.fr" Style="{StaticResource EmailHelperButton}" Focusable="False"
++                            Tag="@hotmail.fr" Click="EmailHelper_Domain_Click" />
++                    <Button Content="@outlook.fr" Style="{StaticResource EmailHelperButton}" Focusable="False"
++                            Tag="@outlook.fr" Click="EmailHelper_Domain_Click" />
++                    <Button Content="@orange.fr" Style="{StaticResource EmailHelperButton}" Focusable="False"
++                            Tag="@orange.fr" Click="EmailHelper_Domain_Click" />
++                    <Button Content="@yahoo.fr" Style="{StaticResource EmailHelperButton}" Focusable="False"
++                            Tag="@yahoo.fr" Click="EmailHelper_Domain_Click" />
++                </StackPanel>
+             </Grid>
+ 
+             <!-- Zone Notion (WebView2 uniquement ici — ne couvre pas les barres) -->
+diff --git a/src/ElvantoKiosk/MainWindow.xaml.cs b/src/ElvantoKiosk/MainWindow.xaml.cs
+index d3f5bc2..ccaa826 100644
+--- a/src/ElvantoKiosk/MainWindow.xaml.cs
++++ b/src/ElvantoKiosk/MainWindow.xaml.cs
+@@ -98,6 +98,7 @@ public partial class MainWindow : Window
+         FormContainer.Visibility = Visibility.Collapsed;
+         ErrorOverlay.Visibility = Visibility.Collapsed;
+         Home.Visibility = Visibility.Collapsed;
++        EmailHelperBar.Visibility = Visibility.Collapsed;
+         AdminExitButton.Visibility = Visibility.Visible;
+ 
+         Screensaver.Visibility = Visibility.Visible;
+@@ -121,6 +122,7 @@ public partial class MainWindow : Window
+         FormContainer.Visibility = Visibility.Collapsed;
+         ErrorOverlay.Visibility = Visibility.Collapsed;
+         AdminExitButton.Visibility = Visibility.Visible;
++        EmailHelperBar.Visibility = Visibility.Collapsed;
+         Home.Visibility = Visibility.Visible;
+         Background = new SolidColorBrush(Color.FromRgb(0xF8, 0xFA, 0xFC));
+     }
+@@ -259,6 +261,113 @@ public partial class MainWindow : Window
+         }
+     }
+ 
++    // ---------------------------------------------------------------------
++    //  Aide à la saisie e-mail (contourne le bug AltGr de WebView2 tactile)
++    // ---------------------------------------------------------------------
++
++    private void EmailHelper_At_Click(object sender, RoutedEventArgs e)
++        => _ = InsertTextInWebViewAsync("@");
++
++    private void EmailHelper_Domain_Click(object sender, RoutedEventArgs e)
++    {
++        if (sender is FrameworkElement fe && fe.Tag is string domain && !string.IsNullOrEmpty(domain))
++            _ = InsertTextInWebViewAsync(domain);
++    }
++
++    /// <summary>
++    /// Insère le texte donné dans le champ actuellement focalisé de la page Notion,
++    /// en simulant une vraie saisie clavier pour que React/Notion enregistre la valeur.
++    /// Cible la frame qui possède le focus (champ pouvant être dans une iframe).
++    /// </summary>
++    private async System.Threading.Tasks.Task InsertTextInWebViewAsync(string text)
++    {
++        if (!_webViewReady || !_inFormMode)
++            return;
++
++        // Garde le focus dans la WebView (le clic bouton ne doit pas le voler durablement).
++        var script = BuildInsertTextScript(text);
++
++        try
++        {
++            // 1) Frame principale.
++            await Web.CoreWebView2.ExecuteScriptAsync(script);
++
++            // 2) Iframes (les formulaires Notion s'affichent souvent dans une iframe).
++            foreach (var frame in _webFrames.ToList())
++            {
++                try { await frame.ExecuteScriptAsync(script); }
++                catch { /* frame détruite entre-temps : ignorer */ }
++            }
++
++            FocusWebViewForInput();
++        }
++        catch (Exception ex)
++        {
++            Logger.Warn($"Insertion e-mail impossible : {ex.Message}");
++        }
++    }
++
++    private static string BuildInsertTextScript(string text)
++    {
++        // Encode le texte en littéral JSON sûr (gère @, ., guillemets, etc.).
++        var literal = JsonSerializer.Serialize(text);
++
++        return $@"
++(function() {{
++  var value = {literal};
++  var el = document.activeElement;
++  if (!el) return false;
++
++  // Champs standards <input>/<textarea>
++  var tag = (el.tagName || '').toLowerCase();
++  if (tag === 'input' || tag === 'textarea') {{
++    var start = el.selectionStart, end = el.selectionEnd;
++    var current = el.value || '';
++    var next;
++    if (typeof start === 'number' && typeof end === 'number') {{
++      next = current.slice(0, start) + value + current.slice(end);
++    }} else {{
++      next = current + value;
++    }}
++    // Utilise le setter natif pour que React détecte le changement.
++    try {{
++      var proto = tag === 'input' ? window.HTMLInputElement.prototype
++                                   : window.HTMLTextAreaElement.prototype;
++      var setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
++      setter.call(el, next);
++    }} catch (e) {{
++      el.value = next;
++    }}
++    if (typeof start === 'number') {{
++      var pos = start + value.length;
++      try {{ el.selectionStart = el.selectionEnd = pos; }} catch (e) {{}}
++    }}
++    el.dispatchEvent(new Event('input', {{ bubbles: true }}));
++    el.dispatchEvent(new Event('change', {{ bubbles: true }}));
++    return true;
++  }}
++
++  // Champs contenteditable (cas Notion)
++  if (el.isContentEditable) {{
++    var ok = false;
++    try {{ ok = document.execCommand('insertText', false, value); }} catch (e) {{}}
++    if (!ok) {{
++      var sel = window.getSelection();
++      if (sel && sel.rangeCount > 0) {{
++        var range = sel.getRangeAt(0);
++        range.deleteContents();
++        range.insertNode(document.createTextNode(value));
++        range.collapse(false);
++      }}
++    }}
++    el.dispatchEvent(new InputEvent('input', {{ bubbles: true, data: value, inputType: 'insertText' }}));
++    return true;
++  }}
++
++  return false;
++}})();";
++    }
++
+     private void OnFrameCreated(object? sender, CoreWebView2FrameCreatedEventArgs e)
+     {
+         var frame = e.Frame;
+@@ -586,6 +695,7 @@ public partial class MainWindow : Window
+ 
+         var showHome = _config.ShowHomeButton;
+         FormHomeButton.Visibility = showHome ? Visibility.Visible : Visibility.Collapsed;
++        EmailHelperBar.Visibility = _config.ShowEmailHelperBar ? Visibility.Visible : Visibility.Collapsed;
+         ShowLoading();
+ 
+         Logger.Info($"Ouverture du formulaire « {form.Title} » : {form.Url}");
+diff --git a/src/ElvantoKiosk/Models/AppConfig.cs b/src/ElvantoKiosk/Models/AppConfig.cs
+index 5d0c5bb..c8e32c8 100644
+--- a/src/ElvantoKiosk/Models/AppConfig.cs
++++ b/src/ElvantoKiosk/Models/AppConfig.cs
+@@ -28,6 +28,13 @@ public class AppConfig
+     /// <summary>Affiche un bouton « Accueil » discret pendant l'affichage d'un formulaire.</summary>
+     public bool ShowHomeButton { get; set; } = true;
+ 
++    /// <summary>
++    /// Affiche une barre de boutons d'aide à la saisie e-mail (« @ », domaines courants)
++    /// pendant l'affichage d'un formulaire. Contourne un bug de WebView2 sur écran tactile
++    /// où le « @ » (AltGr) n'est pas transmis depuis le clavier tactile Windows.
++    /// </summary>
++    public bool ShowEmailHelperBar { get; set; } = true;
++
+     /// <summary>Efface cookies / données de session au retour à l'accueil (confidentialité entre visiteurs).</summary>
+     public bool ClearDataOnReturnHome { get; set; } = true;
+ 

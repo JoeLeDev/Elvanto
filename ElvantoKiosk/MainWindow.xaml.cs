@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -17,9 +18,14 @@ namespace ElvantoKiosk;
 
 public partial class MainWindow : Window
 {
+    private static readonly string[] TouchKeyboardExecutableCandidates =
+    {
+        @"C:\Program Files\Common Files\microsoft shared\ink\TabTip.exe",
+        @"C:\Program Files\Tablet PC\TabTip.exe"
+    };
+
     private AppConfig _config;
     private readonly KeyboardHook _keyboardHook = new();
-    private readonly VirtualKeyboardService _virtualKeyboard = new();
     private readonly DispatcherTimer _idleTimer;
     private readonly DispatcherTimer _submitTimer;
     private readonly DispatcherTimer _submitCheckTimer;
@@ -40,7 +46,6 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _config = ConfigService.Load(App.BaseDirectory);
-        _virtualKeyboard.ApplyConfig(_config.VirtualKeyboardMode);
 
         Home.ApplyConfig(_config, App.BaseDirectory);
         Home.FormSelected += OnFormSelected;
@@ -89,13 +94,12 @@ public partial class MainWindow : Window
         _onScreensaver = true;
         _inFormMode = false;
         _keyboardHook.SetFormInputActive(false);
-        _virtualKeyboard.OnFormClosed();
 
         FormContainer.Visibility = Visibility.Collapsed;
         ErrorOverlay.Visibility = Visibility.Collapsed;
         Home.Visibility = Visibility.Collapsed;
-        AdminExitButton.Visibility = Visibility.Visible;
         EmailHelperBar.Visibility = Visibility.Collapsed;
+        AdminExitButton.Visibility = Visibility.Visible;
 
         Screensaver.Visibility = Visibility.Visible;
         Screensaver.Start();
@@ -108,7 +112,6 @@ public partial class MainWindow : Window
         _onScreensaver = false;
         _inFormMode = false;
         _keyboardHook.SetFormInputActive(false);
-        _virtualKeyboard.OnFormClosed();
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
@@ -158,18 +161,12 @@ public partial class MainWindow : Window
             Web.PreviewTouchDown += (_, _) =>
             {
                 if (_inFormMode)
-                {
-                    _virtualKeyboard.SuppressTabletKeyboard();
-                    _virtualKeyboard.EnsureVisible();
-                }
+                    EnsureTouchKeyboardVisible();
             };
             Web.PreviewMouseDown += (_, _) =>
             {
                 if (_inFormMode)
-                {
-                    _virtualKeyboard.SuppressTabletKeyboard();
-                    _virtualKeyboard.EnsureVisible();
-                }
+                    EnsureTouchKeyboardVisible();
             };
 
             _submitDetectionScript = BuildSubmitDetectionScript();
@@ -241,12 +238,31 @@ public partial class MainWindow : Window
         {
             Web.Focus();
             Keyboard.Focus(Web);
-            _virtualKeyboard.EnsureVisible();
+            EnsureTouchKeyboardVisible();
         }, DispatcherPriority.Input);
     }
 
+    private void EnsureTouchKeyboardVisible()
+    {
+        try
+        {
+            if (Process.GetProcessesByName("TabTip").Length > 0)
+                return;
+
+            var path = TouchKeyboardExecutableCandidates.FirstOrDefault(File.Exists);
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Impossible d'ouvrir le clavier tactile Windows: {ex.Message}");
+        }
+    }
+
     // ---------------------------------------------------------------------
-    //  Aide à la saisie e-mail (contourne le bug @ du clavier tactile TabTip)
+    //  Aide à la saisie e-mail (contourne le bug AltGr de WebView2 tactile)
     // ---------------------------------------------------------------------
 
     private void EmailHelper_At_Click(object sender, RoutedEventArgs e)
@@ -258,21 +274,29 @@ public partial class MainWindow : Window
             _ = InsertTextInWebViewAsync(domain);
     }
 
+    /// <summary>
+    /// Insère le texte donné dans le champ actuellement focalisé de la page Notion,
+    /// en simulant une vraie saisie clavier pour que React/Notion enregistre la valeur.
+    /// Cible la frame qui possède le focus (champ pouvant être dans une iframe).
+    /// </summary>
     private async System.Threading.Tasks.Task InsertTextInWebViewAsync(string text)
     {
         if (!_webViewReady || !_inFormMode)
             return;
 
+        // Garde le focus dans la WebView (le clic bouton ne doit pas le voler durablement).
         var script = BuildInsertTextScript(text);
 
         try
         {
+            // 1) Frame principale.
             await Web.CoreWebView2.ExecuteScriptAsync(script);
 
+            // 2) Iframes (les formulaires Notion s'affichent souvent dans une iframe).
             foreach (var frame in _webFrames.ToList())
             {
                 try { await frame.ExecuteScriptAsync(script); }
-                catch { /* frame détruite entre-temps */ }
+                catch { /* frame détruite entre-temps : ignorer */ }
             }
 
             FocusWebViewForInput();
@@ -285,6 +309,7 @@ public partial class MainWindow : Window
 
     private static string BuildInsertTextScript(string text)
     {
+        // Encode le texte en littéral JSON sûr (gère @, ., guillemets, etc.).
         var literal = JsonSerializer.Serialize(text);
 
         return $@"
@@ -293,6 +318,7 @@ public partial class MainWindow : Window
   var el = document.activeElement;
   if (!el) return false;
 
+  // Champs standards <input>/<textarea>
   var tag = (el.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea') {{
     var start = el.selectionStart, end = el.selectionEnd;
@@ -303,6 +329,7 @@ public partial class MainWindow : Window
     }} else {{
       next = current + value;
     }}
+    // Utilise le setter natif pour que React détecte le changement.
     try {{
       var proto = tag === 'input' ? window.HTMLInputElement.prototype
                                    : window.HTMLTextAreaElement.prototype;
@@ -320,6 +347,7 @@ public partial class MainWindow : Window
     return true;
   }}
 
+  // Champs contenteditable (cas Notion)
   if (el.isContentEditable) {{
     var ok = false;
     try {{ ok = document.execCommand('insertText', false, value); }} catch (e) {{}}
@@ -581,7 +609,6 @@ public partial class MainWindow : Window
     {
         _config = ConfigService.Load(App.BaseDirectory);
         _submitDetectionScript = BuildSubmitDetectionScript();
-        _virtualKeyboard.ApplyConfig(_config.VirtualKeyboardMode);
         Home.ApplyConfig(_config, App.BaseDirectory);
         Screensaver.ApplyConfig(_config, App.BaseDirectory);
         Logger.Info("Configuration rechargée à chaud.");
@@ -651,7 +678,6 @@ public partial class MainWindow : Window
         _onScreensaver = false;
         _inFormMode = true;
         _keyboardHook.SetFormInputActive(true);
-        _virtualKeyboard.EnsureVisible();
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();
@@ -689,7 +715,6 @@ public partial class MainWindow : Window
         HideThankYouOverlay();
         _inFormMode = false;
         _keyboardHook.SetFormInputActive(false);
-        _virtualKeyboard.OnFormClosed();
         _submitDetected = false;
         _submitTimer.Stop();
         _submitCheckTimer.Stop();

@@ -30,31 +30,19 @@ public class AppConfig
 
     /// <summary>
     /// Affiche une barre de boutons d'aide à la saisie e-mail (« @ », domaines courants)
-    /// pendant l'affichage d'un formulaire. Contourne le bug WebView2 où le « @ »
-    /// n'est pas transmis depuis le clavier tactile de la tablette.
+    /// pendant l'affichage d'un formulaire. Contourne un bug de WebView2 sur écran tactile
+    /// où le « @ » (AltGr) n'est pas transmis depuis le clavier tactile Windows.
     /// </summary>
     public bool ShowEmailHelperBar { get; set; } = true;
 
     /// <summary>Efface cookies / données de session au retour à l'accueil (confidentialité entre visiteurs).</summary>
     public bool ClearDataOnReturnHome { get; set; } = true;
 
-    /// <summary>
-    /// Clavier virtuel en mode formulaire : « Osk » (clavier visuel Windows),
-    /// « TabTip » (clavier tactile tablette), ou « None » (aucun clavier auto).
-    /// </summary>
-    public string VirtualKeyboardMode { get; set; } = "Osk";
-
-    /// <summary>Affiche un écran de veille au démarrage et après inactivité.</summary>
+    /// <summary>Affiche un écran de veille (horloge + logo) au démarrage et après inactivité.</summary>
     public bool ScreensaverEnabled { get; set; } = true;
 
-    /// <summary>Image de fond plein écran (ex. assets/screensaver-background.jpg). Optionnel.</summary>
-    public string ScreensaverBackgroundPath { get; set; } = "assets/screensaver-background.png";
-
-    /// <summary>Logo affiché en haut de l'écran de veille (ex. assets/screensaver-logo.png).</summary>
-    public string ScreensaverLogoPath { get; set; } = "assets/screensaver-logo.png";
-
-    /// <summary>Titre graphique central (ex. assets/screensaver-title.png).</summary>
-    public string ScreensaverTitlePath { get; set; } = "assets/screensaver-title.png";
+    /// <summary>Sous-titre affiché sur l'écran de veille.</summary>
+    public string ScreensaverSubtitle { get; set; } = "KIOSQUE DE PRISE DE RENDEZ-VOUS";
 
     /// <summary>Texte d'invitation tactile sur l'écran de veille.</summary>
     public string ScreensaverPrompt { get; set; } = "TOUCHEZ L'ÉCRAN POUR COMMENCER";
