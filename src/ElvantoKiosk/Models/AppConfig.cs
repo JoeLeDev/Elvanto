@@ -37,11 +37,17 @@ public class AppConfig
     /// </summary>
     public string VirtualKeyboardMode { get; set; } = "Osk";
 
-    /// <summary>Affiche un écran de veille (horloge + logo) au démarrage et après inactivité.</summary>
+    /// <summary>Affiche un écran de veille au démarrage et après inactivité.</summary>
     public bool ScreensaverEnabled { get; set; } = true;
 
-    /// <summary>Sous-titre affiché sur l'écran de veille.</summary>
-    public string ScreensaverSubtitle { get; set; } = "KIOSQUE DE PRISE DE RENDEZ-VOUS";
+    /// <summary>Image de fond plein écran (ex. assets/screensaver-background.jpg). Optionnel.</summary>
+    public string ScreensaverBackgroundPath { get; set; } = "assets/screensaver-background.png";
+
+    /// <summary>Logo affiché en haut de l'écran de veille (ex. assets/screensaver-logo.png).</summary>
+    public string ScreensaverLogoPath { get; set; } = "assets/screensaver-logo.png";
+
+    /// <summary>Titre graphique central (ex. assets/screensaver-title.png).</summary>
+    public string ScreensaverTitlePath { get; set; } = "assets/screensaver-title.png";
 
     /// <summary>Texte d'invitation tactile sur l'écran de veille.</summary>
     public string ScreensaverPrompt { get; set; } = "TOUCHEZ L'ÉCRAN POUR COMMENCER";

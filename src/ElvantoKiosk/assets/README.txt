@@ -1,7 +1,17 @@
-Logo de l'organisation ICC.
+Assets graphiques de la borne ICC.
 
-- Fichier actuel : LOGO-ICC.png  (modifiable via "LogoPath" dans config.json)
-- Format recommandé : PNG avec fond transparent
-- Hauteur idéale : environ 120 à 240 px (la largeur s'adapte automatiquement)
+Page d'accueil
+--------------
+- LOGO-ICC.png : logo sur la page d'accueil (config : LogoPath)
 
-Si aucun logo n'est présent, le nom de l'organisation (OrganizationName) est affiché à la place.
+Écran de veille
+---------------
+- screensaver-logo.png   : logo « IMPACT CENTRE CHRETIEN » (config : ScreensaverLogoPath)
+- screensaver-title.png  : titre « PRISE DE RENDEZ-VOUS » (config : ScreensaverTitlePath)
+- screensaver-background.png : fond plein écran (config : ScreensaverBackgroundPath)
+
+Recommandations
+---------------
+- Format PNG avec fond transparent pour logo et titre (meilleur rendu sur le fond coloré).
+- Fond : export JPG/PNG 1920×1080 depuis la maquette.
+- Si un fichier est absent, l'app affiche un repli (dégradé, texte).

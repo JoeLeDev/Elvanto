@@ -99,7 +99,9 @@ public static class ConfigService
         {
             ThankYouMessage = "Merci ! Retour à l'accueil…",
             ScreensaverEnabled = true,
-            ScreensaverSubtitle = "KIOSQUE DE PRISE DE RENDEZ-VOUS",
+            ScreensaverBackgroundPath = "assets/screensaver-background.png",
+            ScreensaverLogoPath = "assets/screensaver-logo.png",
+            ScreensaverTitlePath = "assets/screensaver-title.png",
             ScreensaverPrompt = "TOUCHEZ L'ÉCRAN POUR COMMENCER",
             FormCardAccentColors =
             [

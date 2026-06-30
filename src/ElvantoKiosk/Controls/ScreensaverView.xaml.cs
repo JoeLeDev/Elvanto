@@ -4,7 +4,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using ElvantoKiosk.Models;
@@ -29,72 +28,97 @@ public partial class ScreensaverView : UserControl
 
     public void ApplyConfig(AppConfig config, string baseDirectory)
     {
-        OrgNameText.Text = config.OrganizationName;
-        SubtitleText.Text = config.ScreensaverSubtitle;
         PromptText.Text = config.ScreensaverPrompt;
-        LoadLogo(config.LogoPath, baseDirectory);
+        LoadBackground(config.ScreensaverBackgroundPath, baseDirectory);
+        LoadLogo(config.ScreensaverLogoPath, config.OrganizationName, baseDirectory);
+        LoadTitle(config.ScreensaverTitlePath, baseDirectory);
     }
 
     public void Start()
     {
         UpdateClock();
         _clockTimer.Start();
-        StartPulseAnimation();
     }
 
-    public void Stop()
-    {
-        _clockTimer.Stop();
-    }
+    public void Stop() => _clockTimer.Stop();
 
     private void UpdateClock()
     {
         var now = DateTime.Now;
-        HoursText.Text = now.ToString("HH", French);
-        MinutesText.Text = now.ToString("mm", French);
-        SecondsText.Text = now.ToString("ss", French);
         DateText.Text = now.ToString("dddd d MMMM yyyy", French).ToUpper(French);
+        TimeText.Text = now.ToString("HH:mm", French);
     }
 
-    private void StartPulseAnimation()
+    private void LoadBackground(string path, string baseDirectory)
     {
-        var animation = new DoubleAnimation(0.35, 1.0, TimeSpan.FromSeconds(1.2))
+        if (!TryLoadImage(path, baseDirectory, out var bitmap))
         {
-            AutoReverse = true,
-            RepeatBehavior = RepeatBehavior.Forever
-        };
-        PulseDot.BeginAnimation(OpacityProperty, animation);
+            BackgroundFallback.Visibility = Visibility.Visible;
+            BackgroundImage.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        BackgroundImage.Source = bitmap;
+        BackgroundImage.Visibility = Visibility.Visible;
+        BackgroundFallback.Visibility = Visibility.Collapsed;
     }
 
-    private void LoadLogo(string logoPath, string baseDirectory)
+    private void LoadLogo(string path, string organizationName, string baseDirectory)
     {
+        if (TryLoadImage(path, baseDirectory, out var bitmap))
+        {
+            LogoImage.Source = bitmap;
+            LogoImage.Visibility = Visibility.Visible;
+            OrgNameText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(organizationName))
+        {
+            OrgNameText.Text = organizationName;
+            OrgNameText.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void LoadTitle(string path, string baseDirectory)
+    {
+        if (TryLoadImage(path, baseDirectory, out var bitmap))
+        {
+            TitleImage.Source = bitmap;
+            TitleImage.Visibility = Visibility.Visible;
+            TitleFallbackText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        TitleFallbackText.Visibility = Visibility.Visible;
+    }
+
+    private static bool TryLoadImage(string imagePath, string baseDirectory, out BitmapImage bitmap)
+    {
+        bitmap = new BitmapImage();
+
         try
         {
-            if (string.IsNullOrWhiteSpace(logoPath))
-                return;
+            if (string.IsNullOrWhiteSpace(imagePath))
+                return false;
 
-            var fullPath = Path.IsPathRooted(logoPath)
-                ? logoPath
-                : Path.Combine(baseDirectory, logoPath);
+            var fullPath = Path.IsPathRooted(imagePath)
+                ? imagePath
+                : Path.Combine(baseDirectory, imagePath);
 
             if (!File.Exists(fullPath))
-            {
-                Logger.Warn($"Logo introuvable pour l'écran de veille : {fullPath}");
-                return;
-            }
+                return false;
 
-            var bitmap = new BitmapImage();
             bitmap.BeginInit();
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.UriSource = new Uri(fullPath, UriKind.Absolute);
             bitmap.EndInit();
-
-            LogoImage.Source = bitmap;
-            LogoFrame.Visibility = Visibility.Visible;
+            return true;
         }
         catch (Exception ex)
         {
-            Logger.Error("Impossible de charger le logo (écran de veille).", ex);
+            Logger.Warn($"Image écran de veille introuvable ou invalide ({imagePath}) : {ex.Message}");
+            return false;
         }
     }
 

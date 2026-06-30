@@ -72,112 +72,94 @@
 
     .screen.active { display: flex; }
 
-    /* Veille */
+    /* Veille — maquette ICC */
     #screen-screensaver {
-      background: linear-gradient(180deg, var(--ss-bg-top) 0%, var(--ss-bg-mid) 55%, var(--ss-bg-bot) 100%);
-      color: var(--ss-text);
+      color: #f8fafc;
       cursor: pointer;
       user-select: none;
+      overflow: hidden;
+      padding-top: 0;
+      position: relative;
     }
 
-    #screen-screensaver::before,
-    #screen-screensaver::after {
-      content: "";
+    .ss-bg {
       position: absolute;
-      border-radius: 50%;
-      pointer-events: none;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(11, 30, 61, 0.15) 0%, rgba(45, 27, 78, 0.2) 100%),
+        url("../src/ElvantoKiosk/assets/screensaver-background.png") center / cover no-repeat;
+      z-index: 0;
     }
 
-    #screen-screensaver::before {
-      width: 900px; height: 900px;
-      top: -280px; left: -350px;
-      background: radial-gradient(circle, rgba(124, 58, 237, 0.12) 0%, transparent 70%);
+    .ss-bg-fallback {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, #0b1e3d 0%, #1a3a5c 35%, #2d1b4e 70%, #1a1040 100%);
+      z-index: 0;
     }
 
-    #screen-screensaver::after {
-      width: 700px; height: 700px;
-      bottom: -200px; right: -250px;
-      background: radial-gradient(circle, rgba(37, 99, 235, 0.10) 0%, transparent 70%);
-    }
-
-    .ss-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 40px 24px;
+    .ss-layout {
       position: relative;
       z-index: 2;
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: calc(100vh - 32px);
+      padding: 32px 40px 28px;
     }
 
-    .ss-logo img { max-height: 120px; width: auto; }
-
-    .ss-org {
-      font-size: clamp(28px, 4vw, 42px);
-      font-weight: 700;
-      margin-top: 12px;
+    .ss-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: 24px;
     }
 
-    .ss-subtitle {
-      color: var(--ss-muted);
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      margin-top: 10px;
-      text-transform: uppercase;
-    }
-
-    .ss-clock {
-      margin-top: 48px;
+    .ss-logo-wrap {
+      grid-column: 1 / -1;
       display: flex;
-      align-items: flex-start;
       justify-content: center;
-      gap: 4px;
     }
 
-    .ss-time {
-      font-size: clamp(72px, 14vw, 120px);
-      font-weight: 300;
-      line-height: 1;
+    .ss-logo-wrap img {
+      max-height: 200px;
+      width: auto;
+      object-fit: contain;
     }
 
-    .ss-colon { color: var(--ss-gold); font-size: clamp(72px, 14vw, 120px); font-weight: 300; line-height: 1; }
-    .ss-seconds { color: var(--ss-accent); font-size: clamp(24px, 4vw, 36px); font-weight: 300; margin-top: 18px; margin-left: 8px; }
-    .ss-date { color: var(--ss-accent); font-size: 15px; font-weight: 600; letter-spacing: 0.14em; margin-top: 8px; text-transform: uppercase; }
+    .ss-datetime {
+      position: absolute;
+      top: 32px;
+      right: 40px;
+      text-align: right;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.35;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
 
-    .ss-prompt-wrap { margin-top: 56px; }
-
-    .ss-pulse-ring {
-      width: 48px; height: 48px;
-      border: 2px solid var(--ss-gold);
-      border-radius: 50%;
-      margin: 0 auto 16px;
+    .ss-title-wrap {
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.5;
+      padding: 0 24px;
     }
 
-    .ss-pulse-dot {
-      width: 14px; height: 14px;
-      background: var(--ss-gold);
-      border-radius: 50%;
-      animation: pulse 1.2s ease-in-out infinite alternate;
-    }
-
-    @keyframes pulse {
-      from { opacity: 0.35; transform: scale(0.9); }
-      to   { opacity: 1; transform: scale(1); }
+    .ss-title-wrap img {
+      max-width: min(820px, 88vw);
+      width: 100%;
+      height: auto;
+      object-fit: contain;
     }
 
     .ss-prompt {
-      color: var(--ss-muted);
-      font-size: 13px;
+      text-align: center;
+      font-size: 14px;
       font-weight: 600;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
+      padding-bottom: 8px;
     }
 
     /* Accueil */
@@ -251,6 +233,9 @@
 
     @media (max-width: 900px) {
       .forms-row { grid-template-columns: repeat(2, 1fr); min-height: 50vh; }
+      .ss-layout { padding: 24px 20px 20px; }
+      .ss-datetime { top: 40px; right: 20px; font-size: 13px; }
+      .ss-logo-wrap img { max-height: 140px; }
     }
 
     .form-card {
@@ -612,23 +597,21 @@
   </nav>
 
   <div id="screen-screensaver" class="screen active">
-    <div class="ss-content">
-      <div class="ss-logo">
-        <img src="../src/ElvantoKiosk/assets/LOGO-ICC.png" alt="ICC" />
+    <div class="ss-bg" aria-hidden="true"></div>
+    <div class="ss-datetime">
+      <div id="clock-date">—</div>
+      <div id="clock-time">00:00</div>
+    </div>
+    <div class="ss-layout">
+      <header class="ss-header">
+        <div class="ss-logo-wrap">
+          <img id="ss-logo" src="../src/ElvantoKiosk/assets/screensaver-logo.png" alt="Impact Centre Chrétien" />
+        </div>
+      </header>
+      <div class="ss-title-wrap">
+        <img id="ss-title" src="../src/ElvantoKiosk/assets/screensaver-title.png" alt="Prise de rendez-vous" />
       </div>
-      <p class="ss-org" id="ss-org">Impact Centre Chrétien</p>
-      <p class="ss-subtitle" id="ss-subtitle">KIOSQUE DE PRISE DE RENDEZ-VOUS</p>
-      <div class="ss-clock">
-        <span class="ss-time" id="clock-hours">00</span>
-        <span class="ss-colon">:</span>
-        <span class="ss-time" id="clock-minutes">00</span>
-        <span class="ss-seconds" id="clock-seconds">00</span>
-      </div>
-      <p class="ss-date" id="clock-date">—</p>
-      <div class="ss-prompt-wrap">
-        <div class="ss-pulse-ring"><div class="ss-pulse-dot"></div></div>
-        <p class="ss-prompt" id="ss-prompt">TOUCHEZ L'ÉCRAN POUR COMMENCER</p>
-      </div>
+      <p class="ss-prompt" id="ss-prompt">TOUCHEZ L'ÉCRAN POUR COMMENCER</p>
     </div>
   </div>
 
@@ -766,7 +749,9 @@
       AdminPin: "2468",
       ReturnDelayAfterSubmitSeconds: 3,
       ThankYouMessage: "Merci ! Retour à l'accueil…",
-      ScreensaverSubtitle: "KIOSQUE DE PRISE DE RENDEZ-VOUS",
+      ScreensaverBackgroundPath: "assets/screensaver-background.png",
+      ScreensaverLogoPath: "assets/screensaver-logo.png",
+      ScreensaverTitlePath: "assets/screensaver-title.png",
       ScreensaverPrompt: "TOUCHEZ L'ÉCRAN POUR COMMENCER",
       ReturnToScreensaverOnHome: true,
       FormCardAccentColors: ["#DC2626", "#CA8A04", "#2563EB", "#7C3AED"],
@@ -808,9 +793,13 @@
       screenForm.classList.add('active');
     }
 
+    const ASSETS_BASE = "../src/ElvantoKiosk/";
+
     function applyConfig() {
-      document.getElementById('ss-org').textContent = CONFIG.OrganizationName;
-      document.getElementById('ss-subtitle').textContent = CONFIG.ScreensaverSubtitle;
+      document.getElementById('ss-logo').src = ASSETS_BASE + CONFIG.ScreensaverLogoPath;
+      document.getElementById('ss-title').src = ASSETS_BASE + CONFIG.ScreensaverTitlePath;
+      document.querySelector('.ss-bg').style.backgroundImage =
+        `linear-gradient(135deg, rgba(11, 30, 61, 0.15) 0%, rgba(45, 27, 78, 0.2) 100%), url("${ASSETS_BASE}${CONFIG.ScreensaverBackgroundPath}")`;
       document.getElementById('ss-prompt').textContent = CONFIG.ScreensaverPrompt;
       document.getElementById('welcome-title').textContent = CONFIG.WelcomeTitle;
       document.getElementById('welcome-message').textContent = CONFIG.WelcomeMessage;
@@ -878,19 +867,19 @@
     function updateClock() {
       const now = new Date();
       const pad = n => String(n).padStart(2, '0');
-      document.getElementById('clock-hours').textContent = pad(now.getHours());
-      document.getElementById('clock-minutes').textContent = pad(now.getMinutes());
-      document.getElementById('clock-seconds').textContent = pad(now.getSeconds());
       document.getElementById('clock-date').textContent =
         now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+      document.getElementById('clock-time').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
     }
 
     const CONFIG_FIELDS = [
       { key: 'WelcomeTitle', label: 'WelcomeTitle', help: 'Titre principal sur la page des liens.' },
       { key: 'WelcomeMessage', label: 'WelcomeMessage', help: 'Message de présentation sous le titre.', textarea: true },
       { key: 'ThankYouMessage', label: 'ThankYouMessage', help: 'Message affiché après envoi du formulaire.', textarea: true },
-      { key: 'ScreensaverSubtitle', label: 'ScreensaverSubtitle', help: 'Sous-titre sur l\'écran de veille.' },
       { key: 'ScreensaverPrompt', label: 'ScreensaverPrompt', help: 'Texte d\'invitation tactile sur la veille.' },
+      { key: 'ScreensaverBackgroundPath', label: 'ScreensaverBackgroundPath', help: 'Fond plein écran (ex. assets/screensaver-background.png).' },
+      { key: 'ScreensaverLogoPath', label: 'ScreensaverLogoPath', help: 'Logo en haut de la veille.' },
+      { key: 'ScreensaverTitlePath', label: 'ScreensaverTitlePath', help: 'Titre graphique central.' },
       { key: 'ReturnDelayAfterSubmitSeconds', label: 'ReturnDelayAfterSubmitSeconds', help: 'Secondes avant retour après soumission.' },
       { key: 'AdminPin', label: 'AdminPin', help: 'Code PIN administrateur (aperçu : 2468).' }
     ];

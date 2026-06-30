@@ -56,7 +56,9 @@ public partial class AdminPanelWindow : Window
 
         AddSection("Écran de veille");
         AddCheckField("ScreensaverEnabled", "Active l'écran de veille au démarrage et après inactivité.", Config.ScreensaverEnabled);
-        AddField("ScreensaverSubtitle", "Sous-titre sous le nom (ex. KIOSQUE DE PRISE DE RENDEZ-VOUS).", Config.ScreensaverSubtitle);
+        AddField("ScreensaverBackgroundPath", "Fond plein écran (ex. assets/screensaver-background.jpg). Laisser vide = dégradé.", Config.ScreensaverBackgroundPath);
+        AddField("ScreensaverLogoPath", "Logo en haut (ex. assets/screensaver-logo.png).", Config.ScreensaverLogoPath);
+        AddField("ScreensaverTitlePath", "Titre graphique central (ex. assets/screensaver-title.png).", Config.ScreensaverTitlePath);
         AddField("ScreensaverPrompt", "Texte d'invitation tactile sur l'écran de veille.", Config.ScreensaverPrompt);
         AddField("ScreensaverIdleTimeoutSeconds", "Inactivité sur la page d'accueil avant retour veille (s).", Config.ScreensaverIdleTimeoutSeconds.ToString());
         AddCheckField("ReturnToScreensaverOnHome", "Retour à la veille (au lieu de l'accueil) après un formulaire.", Config.ReturnToScreensaverOnHome);
@@ -241,8 +243,11 @@ public partial class AdminPanelWindow : Window
             case "WelcomeMessage": Config.WelcomeMessage = value; break;
             case "LogoPath": Config.LogoPath = value; break;
             case "AdminPin": Config.AdminPin = value; break;
+            case "VirtualKeyboardMode": Config.VirtualKeyboardMode = value; break;
             case "ThankYouMessage": Config.ThankYouMessage = value; break;
-            case "ScreensaverSubtitle": Config.ScreensaverSubtitle = value; break;
+            case "ScreensaverBackgroundPath": Config.ScreensaverBackgroundPath = value; break;
+            case "ScreensaverLogoPath": Config.ScreensaverLogoPath = value; break;
+            case "ScreensaverTitlePath": Config.ScreensaverTitlePath = value; break;
             case "ScreensaverPrompt": Config.ScreensaverPrompt = value; break;
             case "InactivityTimeoutSeconds":
                 if (int.TryParse(value, out var idle)) Config.InactivityTimeoutSeconds = idle;
