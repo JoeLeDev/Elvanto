@@ -35,7 +35,7 @@ public class AppConfig
     /// Clavier virtuel en mode formulaire : « Osk » (clavier visuel Windows, recommandé)
     /// ou « TabTip » (clavier tactile tablette — le « @ » peut ne pas fonctionner dans WebView2).
     /// </summary>
-    public string VirtualKeyboardMode { get; set; } = VirtualKeyboardService.ModeOsk;
+    public string VirtualKeyboardMode { get; set; } = "Osk";
 
     /// <summary>Affiche un écran de veille (horloge + logo) au démarrage et après inactivité.</summary>
     public bool ScreensaverEnabled { get; set; } = true;
