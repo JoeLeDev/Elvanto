@@ -13,7 +13,7 @@
 
     <Grid>
         <!-- Écran de veille (au lancement et après inactivité) -->
-        <controls:ScreensaverView x:Name="Screensaver" Visibility="Collapsed" />
+        <controls:ScreensaverView x:Name="Screensaver" Visibility="Collapsed" Panel.ZIndex="200" />
 
         <!-- Page d'accueil (fond blanc, 4 boutons en ligne) -->
         <controls:HomeView x:Name="Home" Visibility="Collapsed" />

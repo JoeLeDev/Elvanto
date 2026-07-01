@@ -71,6 +71,7 @@
     }
 
     .screen.active { display: flex; }
+    #screen-screensaver.active { z-index: 50; }
 
     /* Veille — maquette ICC */
     #screen-screensaver {
@@ -330,15 +331,77 @@
     #screen-form { background: #0b1120; color: #f8fafc; }
 
     .top-bar {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
       height: 72px;
       background: #0b1120;
-      padding: 0 20px;
+      padding: 0 16px 0 20px;
       flex-shrink: 0;
+      gap: 12px;
     }
 
-    .top-bar-title { flex: 1; text-align: center; font-size: 20px; font-weight: 600; }
+    .top-bar-title {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .email-helper-bar {
+      grid-column: 2;
+      grid-row: 1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .email-helper-bar.hidden { display: none; }
+
+    .email-helper-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      min-height: 44px;
+      min-width: 44px;
+      padding: 8px 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .email-helper-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .email-helper-btn:active { transform: scale(0.97); }
+
+    .keyboard-badge {
+      position: fixed;
+      top: 36px;
+      right: 12px;
+      z-index: 260;
+      background: rgba(15, 23, 42, 0.88);
+      color: #94a3b8;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      display: none;
+    }
+
+    .keyboard-badge.visible { display: block; }
 
     .form-viewport {
       flex: 1;
@@ -386,10 +449,32 @@
       cursor: pointer;
     }
 
-    .form-placeholder { text-align: center; color: #64748b; padding: 40px; max-width: 520px; }
+    .form-placeholder { text-align: center; color: #64748b; padding: 40px; max-width: 560px; width: 100%; }
     .form-placeholder svg { width: 64px; height: 64px; margin-bottom: 20px; opacity: 0.5; }
     .form-placeholder h2 { font-size: 22px; color: #334155; margin-bottom: 12px; }
     .form-url { margin-top: 10px; font-size: 13px; word-break: break-all; }
+
+    .demo-email-field {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto 0;
+      padding: 14px 16px;
+      font-size: 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      color: #0f172a;
+      text-align: center;
+    }
+
+    .demo-email-field:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .demo-hint { font-size: 13px; color: #94a3b8; margin-top: 12px; }
+
+    .form-bottom-bar .btn-home-form.hidden { display: none; }
 
     /* Overlay merci */
     .thankyou-overlay {
@@ -584,7 +669,7 @@
 <body>
 
   <div class="preview-banner">
-    Aperçu design — synchronisé avec config.json. PIN démo : <strong>2468</strong>
+    Aperçu design — chargé depuis <code>src/ElvantoKiosk/config.json</code>. PIN démo : <strong>2468</strong>
   </div>
 
   <nav class="preview-nav">
@@ -628,9 +713,19 @@
     </div>
   </div>
 
+  <div id="keyboard-badge" class="keyboard-badge" title="VirtualKeyboardMode"></div>
+
   <div id="screen-form" class="screen">
     <div class="top-bar">
       <span class="top-bar-title" id="form-title">—</span>
+      <div class="email-helper-bar" id="email-helper-bar">
+        <button type="button" class="email-helper-btn" data-insert="@" title="Insérer @">@</button>
+        <button type="button" class="email-helper-btn" data-insert="@gmail.com">@gmail.com</button>
+        <button type="button" class="email-helper-btn" data-insert="@hotmail.fr">@hotmail.fr</button>
+        <button type="button" class="email-helper-btn" data-insert="@outlook.fr">@outlook.fr</button>
+        <button type="button" class="email-helper-btn" data-insert="@orange.fr">@orange.fr</button>
+        <button type="button" class="email-helper-btn" data-insert="@yahoo.fr">@yahoo.fr</button>
+      </div>
     </div>
     <div class="form-viewport">
       <div class="form-placeholder">
@@ -641,11 +736,14 @@
         <h2>Formulaire Notion</h2>
         <p>Zone WebView2 — barres haut/bas toujours visibles.</p>
         <p class="form-url" id="form-url-preview"></p>
+        <input type="email" class="demo-email-field" id="demo-email" placeholder="demo@email.com" autocomplete="off" />
+        <p class="demo-hint">Champ de démo — testez la barre @ ci-dessus (comme sur la borne).</p>
       </div>
     </div>
     <div class="form-bottom-bar">
       <button class="btn-home-form" type="button" id="btn-home">← Revenir à l'accueil</button>
       <button class="btn-simulate" type="button" id="btn-simulate-submit">Simuler envoi ✓</button>
+      <button type="button" class="admin-exit-btn" id="btn-form-admin" title="Administration" style="position:static;opacity:0.35;">🔒</button>
     </div>
   </div>
 
@@ -741,7 +839,8 @@
   </div>
 
   <script>
-    // Miroir de config.json (aperçu local)
+    const CONFIG_PATH = "../src/ElvantoKiosk/config.json";
+
     let CONFIG = {
       OrganizationName: "ICC",
       WelcomeTitle: "Bienvenue",
@@ -749,10 +848,15 @@
       AdminPin: "2468",
       ReturnDelayAfterSubmitSeconds: 3,
       ThankYouMessage: "Merci ! Retour à l'accueil…",
+      ShowHomeButton: true,
+      ShowEmailHelperBar: true,
+      VirtualKeyboardMode: "None",
+      ScreensaverEnabled: true,
       ScreensaverBackgroundPath: "assets/screensaver-background.png",
       ScreensaverLogoPath: "assets/screensaver-logo.png",
       ScreensaverTitlePath: "assets/screensaver-title.png",
       ScreensaverPrompt: "TOUCHEZ L'ÉCRAN POUR COMMENCER",
+      ScreensaverIdleTimeoutSeconds: 120,
       ReturnToScreensaverOnHome: true,
       FormCardAccentColors: ["#DC2626", "#CA8A04", "#2563EB", "#7C3AED"],
       Forms: [
@@ -769,15 +873,33 @@
     const thankyouOverlay = document.getElementById('thankyou-overlay');
     const errorOverlay = document.getElementById('error-overlay');
     let thankyouTimer = null;
+    let suppressHomeInput = false;
+    let homeInputUnblockTimer = null;
 
     function hideAllScreens() {
       [screenSaver, screenHome, screenForm].forEach(s => s.classList.remove('active'));
+      document.getElementById('keyboard-badge').classList.remove('visible');
     }
 
     function showScreensaver() {
+      suppressHomeInput = false;
+      clearTimeout(homeInputUnblockTimer);
+      screenHome.style.pointerEvents = '';
       hideAllScreens();
       screenSaver.classList.add('active');
       errorOverlay.classList.remove('visible');
+    }
+
+    function dismissScreensaver() {
+      suppressHomeInput = true;
+      screenHome.style.pointerEvents = 'none';
+      clearTimeout(homeInputUnblockTimer);
+      homeInputUnblockTimer = setTimeout(() => {
+        suppressHomeInput = false;
+        if (screenHome.classList.contains('active'))
+          screenHome.style.pointerEvents = '';
+      }, 450);
+      setTimeout(showHome, 0);
     }
 
     function showHome() {
@@ -791,6 +913,32 @@
       document.getElementById('form-url-preview').textContent = url || '';
       hideAllScreens();
       screenForm.classList.add('active');
+      updateFormChrome();
+    }
+
+    function updateFormChrome() {
+      const showBar = CONFIG.ShowEmailHelperBar !== false;
+      document.getElementById('email-helper-bar').classList.toggle('hidden', !showBar);
+
+      const showHome = CONFIG.ShowHomeButton !== false;
+      document.getElementById('btn-home').classList.toggle('hidden', !showHome);
+
+      const mode = (CONFIG.VirtualKeyboardMode || 'Osk').trim();
+      const badge = document.getElementById('keyboard-badge');
+      const labels = { None: 'Clavier auto : désactivé', Osk: 'Clavier auto : OSK', TabTip: 'Clavier auto : TabTip' };
+      badge.textContent = labels[mode] || `Clavier auto : ${mode}`;
+      badge.classList.toggle('visible', screenForm.classList.contains('active'));
+    }
+
+    function insertIntoDemoField(text) {
+      const input = document.getElementById('demo-email');
+      if (!input) return;
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      input.value = input.value.slice(0, start) + text + input.value.slice(end);
+      const pos = start + text.length;
+      input.setSelectionRange(pos, pos);
+      input.focus();
     }
 
     const ASSETS_BASE = "../src/ElvantoKiosk/";
@@ -804,8 +952,21 @@
       document.getElementById('welcome-title').textContent = CONFIG.WelcomeTitle;
       document.getElementById('welcome-message').textContent = CONFIG.WelcomeMessage;
       document.getElementById('thankyou-message').textContent = CONFIG.ThankYouMessage;
+      updateFormChrome();
       renderForms();
       renderConfigFields();
+    }
+
+    async function loadConfigFromFile() {
+      try {
+        const res = await fetch(CONFIG_PATH);
+        if (!res.ok) throw new Error(res.statusText);
+        const data = await res.json();
+        CONFIG = { ...CONFIG, ...data };
+        applyConfig();
+      } catch {
+        applyConfig();
+      }
     }
 
     function getAccent(form, index) {
@@ -838,6 +999,7 @@
           <span class="card-arrow">→</span>`;
 
         btn.addEventListener('click', () => {
+          if (suppressHomeInput) return;
           btn.classList.add('pressed');
           setTimeout(() => btn.classList.remove('pressed'), 180);
           showForm(form.Title, form.Url);
@@ -876,6 +1038,9 @@
       { key: 'WelcomeTitle', label: 'WelcomeTitle', help: 'Titre principal sur la page des liens.' },
       { key: 'WelcomeMessage', label: 'WelcomeMessage', help: 'Message de présentation sous le titre.', textarea: true },
       { key: 'ThankYouMessage', label: 'ThankYouMessage', help: 'Message affiché après envoi du formulaire.', textarea: true },
+      { key: 'ShowHomeButton', label: 'ShowHomeButton', help: 'Affiche le bouton « Revenir à l\'accueil » (true/false).' },
+      { key: 'ShowEmailHelperBar', label: 'ShowEmailHelperBar', help: 'Barre @ et domaines e-mail (true/false).' },
+      { key: 'VirtualKeyboardMode', label: 'VirtualKeyboardMode', help: 'Clavier auto : None (désactivé), Osk ou TabTip.' },
       { key: 'ScreensaverPrompt', label: 'ScreensaverPrompt', help: 'Texte d\'invitation tactile sur la veille.' },
       { key: 'ScreensaverBackgroundPath', label: 'ScreensaverBackgroundPath', help: 'Fond plein écran (ex. assets/screensaver-background.png).' },
       { key: 'ScreensaverLogoPath', label: 'ScreensaverLogoPath', help: 'Logo en haut de la veille.' },
@@ -890,7 +1055,8 @@
       CONFIG_FIELDS.forEach(f => {
         const div = document.createElement('div');
         div.className = 'admin-field';
-        const val = CONFIG[f.key] ?? '';
+        let val = CONFIG[f.key] ?? '';
+        if (typeof val === 'boolean') val = val ? 'true' : 'false';
         div.innerHTML = `
           <label>${f.label}</label>
           <div class="help">${f.help}</div>
@@ -904,22 +1070,40 @@
     function readConfigFields() {
       document.querySelectorAll('#config-fields [data-key]').forEach(el => {
         const key = el.dataset.key;
-        CONFIG[key] = el.tagName === 'TEXTAREA' ? el.value : el.value;
-        if (key === 'ReturnDelayAfterSubmitSeconds') CONFIG[key] = parseInt(CONFIG[key], 10) || 3;
+        let val = el.tagName === 'TEXTAREA' ? el.value : el.value;
+        if (key === 'ReturnDelayAfterSubmitSeconds') {
+          CONFIG[key] = parseInt(val, 10) || 3;
+        } else if (key === 'ShowHomeButton' || key === 'ShowEmailHelperBar') {
+          CONFIG[key] = val === 'true' || val === '1';
+        } else {
+          CONFIG[key] = val;
+        }
       });
     }
 
     // Horloge
     updateClock();
     setInterval(updateClock, 1000);
-    applyConfig();
+    loadConfigFromFile();
 
-    screenSaver.addEventListener('click', e => {
+    screenSaver.addEventListener('pointerdown', e => {
       if (e.target.closest('.preview-nav')) return;
-      showHome();
-    });
+      e.preventDefault();
+      e.stopPropagation();
+      dismissScreensaver();
+    }, { capture: true });
 
     document.getElementById('btn-home').addEventListener('click', showHome);
+    document.getElementById('btn-form-admin').addEventListener('click', () => {
+      enteredPin = '';
+      pinError.classList.remove('visible');
+      updatePinDisplay();
+      pinOverlay.classList.add('visible');
+    });
+
+    document.querySelectorAll('.email-helper-btn').forEach(btn => {
+      btn.addEventListener('click', () => insertIntoDemoField(btn.dataset.insert || ''));
+    });
     document.getElementById('btn-simulate-submit').addEventListener('click', showThankYou);
     document.getElementById('nav-screensaver').addEventListener('click', showScreensaver);
     document.getElementById('nav-home').addEventListener('click', showHome);
@@ -1009,10 +1193,11 @@
       }
     });
 
-    document.getElementById('btn-reload-config').addEventListener('click', () => {
+    document.getElementById('btn-reload-config').addEventListener('click', async () => {
+      await loadConfigFromFile();
       readConfigFields();
       applyConfig();
-      document.getElementById('connection-status').textContent = 'Configuration rechargée (aperçu).';
+      document.getElementById('connection-status').textContent = 'Configuration rechargée depuis config.json.';
       document.getElementById('connection-status').className = 'desc status-ok';
     });
 

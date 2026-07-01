@@ -15,6 +15,7 @@ public partial class ScreensaverView : UserControl
 {
     private readonly DispatcherTimer _clockTimer;
     private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+    private bool _dismissInProgress;
 
     public event EventHandler? Dismissed;
 
@@ -36,6 +37,7 @@ public partial class ScreensaverView : UserControl
 
     public void Start()
     {
+        _dismissInProgress = false;
         UpdateClock();
         _clockTimer.Start();
     }
@@ -124,7 +126,11 @@ public partial class ScreensaverView : UserControl
 
     private void OnScreenTouched(object sender, InputEventArgs e)
     {
-        Dismissed?.Invoke(this, EventArgs.Empty);
         e.Handled = true;
+        if (_dismissInProgress)
+            return;
+
+        _dismissInProgress = true;
+        Dismissed?.Invoke(this, EventArgs.Empty);
     }
 }

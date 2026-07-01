@@ -32,6 +32,8 @@ public partial class MainWindow : Window
     private bool _allowClose;
     private bool _webViewReady;
     private bool _onScreensaver;
+    private bool _suppressHomeInput;
+    private DispatcherTimer? _homeInputUnblockTimer;
     private string? _submitDetectionScript;
     private int _thankYouSecondsLeft;
 
@@ -46,7 +48,7 @@ public partial class MainWindow : Window
         Home.FormSelected += OnFormSelected;
 
         Screensaver.ApplyConfig(_config, App.BaseDirectory);
-        Screensaver.Dismissed += (_, _) => ShowHome();
+        Screensaver.Dismissed += OnScreensaverDismissed;
 
         if (_config.AllowedHosts.Count == 0)
             Logger.Warn("AllowedHosts est vide : la navigation n'est PAS restreinte. Ajoutez les domaines autorisés dans config.json.");
@@ -87,6 +89,8 @@ public partial class MainWindow : Window
     private void ShowScreensaver()
     {
         _onScreensaver = true;
+        _suppressHomeInput = false;
+        _homeInputUnblockTimer?.Stop();
         _inFormMode = false;
         _keyboardHook.SetFormInputActive(false);
         _virtualKeyboard.OnFormClosed();
@@ -94,13 +98,34 @@ public partial class MainWindow : Window
         FormContainer.Visibility = Visibility.Collapsed;
         ErrorOverlay.Visibility = Visibility.Collapsed;
         Home.Visibility = Visibility.Collapsed;
-        AdminExitButton.Visibility = Visibility.Visible;
+        AdminExitButton.Visibility = Visibility.Collapsed;
         EmailHelperBar.Visibility = Visibility.Collapsed;
 
         Screensaver.Visibility = Visibility.Visible;
         Screensaver.Start();
         Background = new System.Windows.Media.SolidColorBrush(
             System.Windows.Media.Color.FromRgb(0x0A, 0x06, 0x18));
+    }
+
+    private void OnScreensaverDismissed(object? sender, EventArgs e)
+    {
+        // Différer l'affichage de l'accueil : sinon le même toucher qui réveille
+        // la veille peut déclencher un bouton formulaire à la même position.
+        _suppressHomeInput = true;
+        Home.IsHitTestVisible = false;
+
+        _homeInputUnblockTimer?.Stop();
+        _homeInputUnblockTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(450) };
+        _homeInputUnblockTimer.Tick += (_, _) =>
+        {
+            _homeInputUnblockTimer.Stop();
+            _suppressHomeInput = false;
+            if (Home.Visibility == Visibility.Visible)
+                Home.IsHitTestVisible = true;
+        };
+        _homeInputUnblockTimer.Start();
+
+        Dispatcher.BeginInvoke(ShowHome, DispatcherPriority.ApplicationIdle);
     }
 
     private void ShowHome()
@@ -121,6 +146,7 @@ public partial class MainWindow : Window
         AdminExitButton.Visibility = Visibility.Visible;
         EmailHelperBar.Visibility = Visibility.Collapsed;
         Home.Visibility = Visibility.Visible;
+        Home.IsHitTestVisible = !_suppressHomeInput;
         Background = new SolidColorBrush(Color.FromRgb(0xF8, 0xFA, 0xFC));
     }
 
@@ -634,6 +660,9 @@ public partial class MainWindow : Window
 
     private void OnFormSelected(object? sender, FormEntry form)
     {
+        if (_suppressHomeInput || _onScreensaver)
+            return;
+
         if (!_webViewReady)
         {
             ShowError("Le navigateur intégré n'est pas encore prêt. Réessayez dans un instant.");

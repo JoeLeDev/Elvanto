@@ -4,7 +4,7 @@
              Background="#0A1028"
              Cursor="Hand">
 
-    <Grid MouseDown="OnScreenTouched" TouchDown="OnScreenTouched">
+    <Grid PreviewMouseDown="OnScreenTouched" PreviewTouchDown="OnScreenTouched">
         <!-- Fond : image si fournie, sinon dégradé proche de la maquette -->
         <Image x:Name="BackgroundImage" Stretch="UniformToFill" Visibility="Collapsed" />
         <Grid x:Name="BackgroundFallback">
